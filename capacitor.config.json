@@ -2,5 +2,10 @@
   "appId": "com.rcky844.medicalexplorer",
   "appName": "Medical Terminology Explorer",
   "webDir": "public",
-  "bundledWebRuntime": false
+  "bundledWebRuntime": false,
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
 }

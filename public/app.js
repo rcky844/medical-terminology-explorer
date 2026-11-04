@@ -23,22 +23,40 @@ const SOURCE_MAP = {
 };
 
 async function fetchBase64(url) {
+  const src = SOURCE_MAP[url] || url;
+  let rawText = '';
+
   const isTauri = !!(window.__TAURI__ && window.__TAURI__.core && typeof window.__TAURI__.core.invoke === 'function');
-  if (isTauri) {
-    const txt = await window.__TAURI__.core.invoke('fetch_text', { url: src });
-    return decodeBase64(txt);
-  }
   const isNative = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
-  if (isNative) {
-    const src = SOURCE_MAP[url];
-    if (!src) throw new Error('Unknown source: ' + url);
-    const { CapacitorHttp } = await import('@capacitor/core');
-    const res = await CapacitorHttp.get({ url: src });
-    return decodeBase64(res.data);
+
+  if (isTauri) {
+    rawText = await window.__TAURI__.core.invoke('fetch_text', { url: src });
   }
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return decodeBase64(await res.text());
+  else if (isNative) {
+    const res = await fetch(src, {
+      headers: {
+        'Accept': 'application/json, text/plain, */*'
+      }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status} from native fetch`);
+    rawText = await res.text();
+  }
+  else {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    rawText = await res.text();
+  }
+
+  const trimmed = rawText.trim();
+  if (trimmed.startsWith('{') || trimmed.startsWith('[') || trimmed.startsWith('<!DOCTYPE')) {
+    return trimmed;
+  }
+
+  try {
+    return decodeBase64(trimmed);
+  } catch (err) {
+    return rawText;
+  }
 }
 
 async function load() {
@@ -49,10 +67,21 @@ async function load() {
       fetchBase64('/api/vocab'),
       fetchBase64('/api/wordofday')
     ]);
-    const data = JSON.parse(termText);
+
+    const parseOrThrow = (text, label) => {
+      const trimmed = (text || '').trim();
+      try {
+        return JSON.parse(trimmed);
+      } catch (err) {
+        throw new Error(`[${label}] Expected JSON, but received: "${trimmed}"`);
+      }
+    };
+
+    const data = parseOrThrow(termText, 'mtlist.json');
     state.terms = Array.isArray(data) ? data : [];
-    state.vocab = JSON.parse(vocabText);
-    state.wodTerms = JSON.parse(wodText);
+    state.vocab = parseOrThrow(vocabText, 'vocab.json');
+    state.wodTerms = parseOrThrow(wodText, 'wordofday.json');
+
     status.hidden = true;
     grid.hidden = false;
     populateFilters();
@@ -60,6 +89,7 @@ async function load() {
     renderWod();
   } catch (err) {
     status.textContent = 'Failed to load data: ' + err.message;
+    console.error('Full load error:', err);
   }
 }
 
