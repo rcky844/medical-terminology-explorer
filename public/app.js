@@ -1,4 +1,4 @@
-const state = { terms: [], filtered: [] };
+const state = { terms: [], filtered: [], test: null };
 
 const $ = (sel) => document.querySelector(sel);
 const grid = $('#grid');
@@ -10,7 +10,6 @@ const detailBody = $('#detailBody');
 function stripHtml(s){ return (s || '').replace(/<[^>]*>/g, ''); }
 
 function decodeBase64(b64) {
-  // atob gives a binary string; decode as UTF-8.
   const bin = atob(b64.trim());
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
@@ -114,11 +113,275 @@ function openDetail(t) {
   detail.showModal();
 }
 
+/* ---------------- Practice Test ---------------- */
+
+function pick(arr, n) {
+  const copy = arr.slice();
+  const out = [];
+  while (out.length < n && copy.length) {
+    const i = Math.floor(Math.random() * copy.length);
+    out.push(copy.splice(i, 1)[0]);
+  }
+  return out;
+}
+
+function stressIndex(t) {
+  const html = t.wordStress_uk || t.wordStress_us;
+  if (!html) return null;
+  const m = html.match(/<strong>(.*?)<\/strong>/);
+  if (!m) return null;
+  const chunks = html.replace(/<\/?p>/g, '').split(/<\/?strong>/).filter(Boolean);
+  const idx = chunks.findIndex(c => c === m[1]);
+  return { idx, chunks: chunks.length };
+}
+
+function makeOddQuestion(type) {
+  // returns {prompt, options:[terms], answerIndex, explanation}
+  const terms = state.terms;
+  let attempts = 0;
+  while (attempts++ < 200) {
+    if (type === 'syllables') {
+      // two same syllable count, one different
+      const counts = {};
+      terms.forEach(t => { counts[t.syllableNo] = counts[t.syllableNo] || []; counts[t.syllableNo].push(t); });
+      const validCounts = Object.keys(counts).filter(k => counts[k].length >= 2);
+      if (validCounts.length < 2) return null;
+      const c1 = validCounts[Math.floor(Math.random()*validCounts.length)];
+      let c2 = validCounts[Math.floor(Math.random()*validCounts.length)];
+      while (c2 === c1) c2 = validCounts[Math.floor(Math.random()*validCounts.length)];
+      const samePair = pick(counts[c1], 2);
+      const odd = pick(counts[c2], 1)[0];
+      const options = shuffle([samePair[0], samePair[1], odd]);
+      return {
+        prompt: 'Which word has a different number of syllables?',
+        options,
+        answer: odd.word,
+        explanation: odd.word + ' has ' + odd.syllableNo + ' syllables; the others have ' + c1 + '.'
+      };
+    }
+    if (type === 'sound') {
+      const groups = {};
+      terms.forEach(t => { const k = (t.word[0] || '').toLowerCase(); groups[k] = groups[k] || []; groups[k].push(t); });
+      const valid = Object.keys(groups).filter(k => groups[k].length >= 2);
+      if (valid.length < 2) return null;
+      const g1 = valid[Math.floor(Math.random()*valid.length)];
+      let g2 = valid[Math.floor(Math.random()*valid.length)];
+      while (g2 === g1) g2 = valid[Math.floor(Math.random()*valid.length)];
+      const samePair = pick(groups[g1], 2);
+      const odd = pick(groups[g2], 1)[0];
+      const options = shuffle([samePair[0], samePair[1], odd]);
+      return {
+        prompt: 'Which word begins with a different sound (initial letter)?',
+        options,
+        answer: odd.word,
+        explanation: odd.word + ' begins with "' + odd.word[0].toUpperCase() + '"; the others begin with "' + g1.toUpperCase() + '".'
+      };
+    }
+    if (type === 'stress') {
+      const groups = {};
+      terms.forEach(t => {
+        const si = stressIndex(t);
+        if (!si || si.idx < 0) return;
+        const key = si.idx + '/' + si.chunks;
+        groups[key] = groups[key] || [];
+        groups[key].push(t);
+      });
+      const valid = Object.keys(groups).filter(k => groups[k].length >= 2);
+      if (valid.length < 2) return null;
+      const g1 = valid[Math.floor(Math.random()*valid.length)];
+      let g2 = valid[Math.floor(Math.random()*valid.length)];
+      while (g2 === g1) g2 = valid[Math.floor(Math.random()*valid.length)];
+      const samePair = pick(groups[g1], 2);
+      const odd = pick(groups[g2], 1)[0];
+      const options = shuffle([samePair[0], samePair[1], odd]);
+      return {
+        prompt: 'Which word has a different stress pattern (stress on a different syllable)?',
+        options,
+        answer: odd.word,
+        explanation: 'Stress position differs for ' + odd.word + '.'
+      };
+    }
+  }
+  return null;
+}
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function generateTest() {
+  const terms = state.terms.filter(t => t.word && t.meaning_uk);
+  // Section 1: write a definition of given term (terms with UK meaning)
+  const sec1Terms = pick(terms, 5);
+  const sec1 = sec1Terms.map(t => ({
+    type: 'defOfTerm',
+    term: t,
+    points: 2
+  }));
+  // Section 2: term from definition
+  const sec2Terms = pick(terms, 5);
+  const sec2 = sec2Terms.map(t => ({
+    type: 'termOfDef',
+    term: t,
+    points: 2
+  }));
+  // Section 3: odd one out
+  const oddTypes = ['syllables','syllables','syllables','sound','sound','stress','stress','stress','syllables','stress'];
+  const oddQs = [];
+  let tries = 0;
+  while (oddQs.length < 10 && tries++ < 500) {
+    const q = makeOddQuestion(oddTypes[oddQs.length] || 'syllables');
+    if (q) oddQs.push({ type: 'odd', q, points: 2 });
+  }
+
+  state.test = { sec1, sec2, oddQs, generatedAt: Date.now() };
+  renderTest();
+}
+
+function renderTest() {
+  const body = $('#testBody');
+  body.innerHTML = '';
+  if (!state.test) return;
+  const { sec1, sec2, oddQs } = state.test;
+
+  let idx = 0;
+  // Section 1
+  body.insertAdjacentHTML('beforeend', '<div class="sectiontitle">Section 1: Write a definition of the following medical terms (10 points)</div>');
+  sec1.forEach((q, i) => {
+    idx++;
+    const el = document.createElement('div');
+    el.className = 'question';
+    el.dataset.qid = 's1-' + i;
+    el.innerHTML = `
+      <h3>Q${idx} (2 marks)</h3>
+      <div class="prompt"><strong>${escapeHtml(q.term.word)}</strong></div>
+      <input type="text" class="s1input" placeholder="Your definition…" />
+      <div class="answer hidden" id="s1ans-${i}">Expected: ${q.term.meaning_uk}</div>
+      <div class="selfmark">
+        <label><input type="checkbox" class="selfok" /> I got this correct</label>
+      </div>`;
+    body.appendChild(el);
+  });
+
+  // Section 2
+  body.insertAdjacentHTML('beforeend', '<div class="sectiontitle">Section 2: Give the medical term for the following definitions (10 points)</div>');
+  sec2.forEach((q, i) => {
+    idx++;
+    const el = document.createElement('div');
+    el.className = 'question';
+    el.dataset.qid = 's2-' + i;
+    el.innerHTML = `
+      <h3>Q${idx} (2 marks)</h3>
+      <div class="prompt">${q.term.meaning_uk}</div>
+      <input type="text" class="s2input" placeholder="Medical term…" />
+      <div class="answer hidden" id="s2ans-${i}">Expected: <strong>${escapeHtml(q.term.word)}</strong></div>`;
+    body.appendChild(el);
+  });
+
+  // Section 3
+  body.insertAdjacentHTML('beforeend', '<div class="sectiontitle">Section 3: Odd one out (10 questions, 2 marks each)</div>');
+  oddQs.forEach((q, i) => {
+    idx++;
+    const optionsHtml = q.q.options.map((t, oi) =>
+      `<button class="option" data-qi="${i}" data-word="${escapeHtml(t.word)}">${escapeHtml(t.word)}</button>`).join('');
+    const el = document.createElement('div');
+    el.className = 'question';
+    el.dataset.qid = 's3-' + i;
+    el.innerHTML = `
+      <h3>Q${idx} (2 marks)</h3>
+      <div class="prompt">${escapeHtml(q.q.prompt)}</div>
+      <div class="options">${optionsHtml}</div>
+      <div class="answer hidden" id="s3ans-${i}">${escapeHtml(q.q.explanation)}</div>`;
+    body.appendChild(el);
+    // selection handlers
+    el.querySelectorAll('.option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        el.querySelectorAll('.option').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        btn.dataset.selected = '1';
+      });
+    });
+  });
+
+  $('#score').textContent = '';
+}
+
+function gradeTest() {
+  if (!state.test) return;
+  const { sec1, sec2, oddQs } = state.test;
+  let score = 0;
+  // Section1: count checked
+  const s1Els = document.querySelectorAll('#testBody .question');
+  // easier: DOM order: first 5 s1, next 5 s2, rest s3
+  const questions = document.querySelectorAll('#testBody .question');
+  let qIndex = 0;
+  // S1
+  sec1.forEach((q, i) => {
+    const qEl = questions[qIndex++];
+    const cb = qEl.querySelector('.selfok');
+    document.getElementById('s1ans-' + i).classList.remove('hidden');
+    if (cb && cb.checked) score += q.points;
+  });
+  // S2
+  sec2.forEach((q, i) => {
+    const qEl = questions[qIndex++];
+    const inp = qEl.querySelector('.s2input');
+    document.getElementById('s2ans-' + i).classList.remove('hidden');
+    const val = (inp.value || '').trim().toLowerCase();
+    if (val && val === q.term.word.toLowerCase()) score += q.points;
+    else if (val) {
+      // partial: maybe show
+    }
+  });
+  // S3
+  oddQs.forEach((q, i) => {
+    const qEl = questions[qIndex++];
+    const selBtn = qEl.querySelector('.option.selected');
+    const ansEl = document.getElementById('s3ans-' + i);
+    ansEl.classList.remove('hidden');
+    const selectedWord = selBtn ? selBtn.getAttribute('data-word') : null;
+    const opts = qEl.querySelectorAll('.option');
+    opts.forEach(b => {
+      const w = b.getAttribute('data-word');
+      if (w === q.q.answer) b.classList.add('correct');
+      else if (b.classList.contains('selected')) b.classList.add('wrong');
+    });
+    if (selectedWord && selectedWord === q.q.answer) score += q.points;
+  });
+
+  const total = sec1.length*2 + sec2.length*2 + oddQs.length*2;
+  $('#score').textContent = `Score: ${score} / ${total}`;
+  $('#score').classList.add('result');
+}
+
+/* ---------------- wiring ---------------- */
+
 $('#closeDetail').addEventListener('click', () => detail.close());
 detail.addEventListener('click', (e) => { if (e.target === detail) detail.close(); });
 
 $('#search').addEventListener('input', applyFilters);
 $('#levelFilter').addEventListener('change', applyFilters);
 $('#catFilter').addEventListener('change', applyFilters);
+
+$('#modeBrowser').addEventListener('click', () => {
+  $('#modeBrowser').classList.add('active');
+  $('#modeTest').classList.remove('active');
+  $('#browserView').hidden = false;
+  $('#testView').hidden = true;
+});
+$('#modeTest').addEventListener('click', () => {
+  $('#modeTest').classList.add('active');
+  $('#modeBrowser').classList.remove('active');
+  $('#browserView').hidden = true;
+  $('#testView').hidden = false;
+  if (!state.test) generateTest();
+});
+$('#genTest').addEventListener('click', generateTest);
+$('#checkTest').addEventListener('click', gradeTest);
 
 load();
