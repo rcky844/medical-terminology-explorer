@@ -275,6 +275,7 @@ function showSessions() {
         <strong>${new Date(sess.createdAt).toLocaleString()}</strong>
         <span>${sess.score}/${sess.total}${sess.timeExpired ? ' (time expired)' : ''}</span>
         <button class="btn secondary sessdetail" data-id="${sess.id}">Details</button>
+        <button class="btn secondary sessdelete" data-id="${sess.id}">Delete</button>
       </div>
       <div class="sessitems hidden" id="sess-${sess.id}"></div>
     </div>
@@ -295,6 +296,15 @@ function showSessions() {
           <div class="${it.awarded ? 'result' : 'wrong'}">${it.awarded ? '✔' : '✘'} ${it.points} pts</div>
         </div>
       `).join('');
+    });
+  });
+  panel.querySelectorAll('.sessdelete').forEach(b => {
+    b.addEventListener('click', () => {
+      const id = +b.dataset.id;
+      if (!confirm('Delete this saved session?')) return;
+      const newList = list.filter(x => x.id !== id);
+      localStorage.setItem('mtTestSessions', JSON.stringify(newList));
+      showSessions();
     });
   });
 }
