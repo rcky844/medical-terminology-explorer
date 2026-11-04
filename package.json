@@ -42,6 +42,7 @@
     },
     "linux": {
       "target": "AppImage"
-    }
+    },
+    "artifactName": "medical-terminology-explorer_v${version}.${ext}"
   }
 }
