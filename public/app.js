@@ -382,6 +382,8 @@ function generateTest() {
     const q = makeOddQuestion(oddTypes[oddQs.length] || 'syllables');
     if (q) oddQs.push({ type: 'odd', q, points: 2 });
   }
+  const intro = $("#testIntro"); if (intro) intro.hidden = true;
+  const bodyEl = $("#testBody"); if (bodyEl) bodyEl.hidden = false;
   state.test = { sec1, sec2, oddQs, generatedAt: Date.now(), graded: false };
   renderTest();
   startTestTimer(600);
@@ -586,7 +588,8 @@ $('#modeTest').addEventListener('click', () => {
   $('#browserView').hidden = true;
   $('#testView').hidden = false;
   $('#duoView').hidden = true;
-  if (!state.test) generateTest();
+  const intro2 = $('#testIntro'); if (intro2) intro2.hidden = false;
+  const body2 = $('#testBody'); if (body2) body2.hidden = true;
 });
 $('#modeDuo').addEventListener('click', () => {
   $('#modeDuo').classList.add('active');
@@ -597,7 +600,9 @@ $('#modeDuo').addEventListener('click', () => {
   $('#duoView').hidden = false;
   duoShowMenu();
 });
-$('#genTest').addEventListener('click', generateTest);
+$('#genTest').addEventListener('click', () => { if (!confirm('Generate a new test and start the 10-minute timer?')) return; const intro = $('#testIntro'); if (intro) intro.hidden = true; const bodyEl = $('#testBody'); if (bodyEl) bodyEl.hidden = false; generateTest(); });
+const startTestBtn = $('#startTest');
+if (startTestBtn) startTestBtn.addEventListener('click', () => { if (!confirm('Start the 10-minute practice test now?')) return; const intro = $('#testIntro'); if (intro) intro.hidden = true; const bodyEl = $('#testBody'); if (bodyEl) bodyEl.hidden = false; generateTest(); });
 $('#checkTest').addEventListener('click', () => gradeTest(false));
 $('#reviewSessionsBtn').addEventListener('click', showSessions);
 const showWodBtn = $('#showWodBtn');
