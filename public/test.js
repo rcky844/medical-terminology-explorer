@@ -176,6 +176,20 @@ function renderTest() {
   $('#score').textContent = '';
 }
 
+function showCelebration(score,total) {
+  const pct = total ? Math.round(score/total*100) : 0;
+  let emoji, msg, cls;
+  if (pct >= 90) { emoji='🎉'; msg='Outstanding!'; cls='celebrate-green'; launchConfetti(); }
+  else if (pct >= 60) { emoji='😊'; msg="You're improving!"; cls='celebrate-yellow'; }
+  else { emoji='💪'; msg='Practice makes perfect.'; cls='celebrate-red'; }
+  const d = $('#celebrateDialog');
+  const body = d.querySelector('.celebrate-body');
+  body.innerHTML = `<div class="celebrate-emoji">${emoji}</div><div class="celebrate-msg ${cls}">${msg}</div><div class="celebrate-pct">${pct}% (${score}/${total})</div>`;
+  const close = $('#closeCelebrate');
+  if (close) close.onclick = () => d.close();
+  d.showModal();
+}
+
 function gradeTest(auto=false) {
   if (!state.test || state.test.graded) return;
   state.test.graded = true;
@@ -251,6 +265,7 @@ function gradeTest(auto=false) {
   el.textContent = (auto ? 'Time expired. ' : '') + `Score: ${score} / ${total}`;
   el.classList.add('result');
   // save session
+  showCelebration(score,total);
   const session = {
     id: Date.now(),
     createdAt: new Date().toISOString(),

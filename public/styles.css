@@ -111,3 +111,14 @@ dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(2px); }
 .match-item.selected { border-color: var(--accent); background: #0c4a6e; }
 .match-item.matched { border-color: #22c55e; background: #14532d; opacity: .7; }
 .match-item.wrong { border-color: #ef4444; background: #7f1d1d; }
+
+.confetti-container { position: fixed; inset: 0; pointer-events: none; z-index: 9999; overflow: hidden; }
+.confetti { position: absolute; top: -12px; width: 10px; height: 14px; border-radius: 2px; animation: confetti-fall 3s ease-out forwards; }
+@keyframes confetti-fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+.celebrate { text-align: center; }
+.celebrate-emoji { font-size: 4rem; margin: .5rem 0; }
+.celebrate-msg { font-size: 1.6rem; font-weight: 700; margin: .5rem 0; }
+.celebrate-green { color: #22c55e; }
+.celebrate-yellow { color: #f59e0b; }
+.celebrate-red { color: #ef4444; }
+.celebrate-pct { color: var(--muted); font-size: 1.1rem; margin-top: .5rem; }

@@ -166,7 +166,7 @@ function renderMatching() {
 function finishDuoAnswer(correct, answerText) {
   const area = $('#duoArea');
   area.querySelectorAll('.option').forEach(b => b.style.pointerEvents = 'none');
-  if (correct) { duoState.score += 10; duoState.streak += 1; }
+  if (correct) { duoState.score += 10; duoState.streak += 1; if (duoState.streak % 5 === 0) launchConfetti(); }
   else { duoState.streak = 0; }
   const ans = $('#duoAns');
   if (ans) { ans.classList.remove('hidden'); ans.innerHTML = correct ? 'Correct! +10' : `Answer: ${escapeHtml(answerText)}`; }
@@ -200,7 +200,7 @@ function checkDuoSpelling(q) {
   const correct = val === q.term.word.toLowerCase();
   const ans = $('#duoAns');
   if (ans) { ans.classList.remove('hidden'); ans.innerHTML = correct ? 'Correct! +10' : `Correct: <strong>${escapeHtml(q.term.word)}</strong>`; }
-  if (correct) { duoState.score += 10; duoState.streak += 1; }
+  if (correct) { duoState.score += 10; duoState.streak += 1; if (duoState.streak % 5 === 0) launchConfetti(); }
   else { duoState.streak = 0; }
   updateDuoStats();
   setTimeout(() => { duoState.qi += 1; renderDuoQuestion(); }, 1100);
