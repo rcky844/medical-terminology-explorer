@@ -86,3 +86,13 @@ dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(2px); }
 .wodactions { display: flex; gap: .4rem; }
 .wodbtn { padding: .35rem .7rem; border: 1px solid var(--border); border-radius: .4rem; background: var(--panel); color: var(--text); cursor: pointer; font-size: .85rem; }
 .wodbtn:hover { border-color: var(--accent); }
+
+.duohead { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; }
+.duostats { display: flex; gap: 1rem; }
+.duoarea { margin-top: 1rem; }
+.duomenu { margin-top: 1rem; }
+.duocards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 1rem; }
+.duocard { text-align: left; background: var(--panel); border: 1px solid var(--border); border-radius: .75rem; padding: 1rem; cursor: pointer; }
+.duocard:hover { border-color: var(--accent); transform: translateY(-2px); }
+.duocard h3 { margin: 0 0 .25rem; color: var(--accent); }
+.duocard p { color: var(--muted); font-size: .9rem; margin: 0 0 .5rem; }

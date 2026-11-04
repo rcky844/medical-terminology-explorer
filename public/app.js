@@ -467,6 +467,157 @@ function gradeTest() {
   el.classList.add('result');
 }
 
+
+/* ---------------- Duolingo Mode ---------------- */
+const duoState = { score: 0, streak: 0, kind: null, questions: [], qi: 0, current: null };
+
+function duoShowMenu() {
+  duoState.kind = null;
+  const area = $('#duoArea'); area.innerHTML = '';
+  const menu = $('#duoMenu');
+  menu.innerHTML = `
+    <div class="duocards">
+      <button class="duocard" data-kind="choosing"><h3>Choosing</h3><p>Find the correct suffix / root / prefix</p><span class="tag">+10 pts</span></button>
+      <button class="duocard" data-kind="finding"><h3>Finding</h3><p>Find the correct meaning</p><span class="tag">+10 pts</span></button>
+      <button class="duocard" data-kind="matching"><h3>Matching</h3><p>Match terms to definitions</p><span class="tag">+10 pts</span></button>
+      <button class="duocard" data-kind="spelling"><h3>Spelling</h3><p>Listen and fill the answer</p><span class="tag">+10 pts</span></button>
+      <button class="duocard" data-kind="mixed"><h3>Mixed</h3><p>All types combined</p><span class="tag">+10 pts</span></button>
+    </div>`;
+  menu.querySelectorAll('.duocard').forEach(b => b.addEventListener('click', () => startDuo(b.dataset.kind)));
+  updateDuoStats();
+}
+
+function updateDuoStats() {
+  const sc = $('#duoScore'); if (sc) sc.textContent = `Score: ${duoState.score}`;
+  const st = $('#duoStreak'); if (st) st.textContent = `Streak: ${duoState.streak} 🔥`;
+}
+
+function buildDuoQuestions(kind, n=8) {
+  const terms = state.terms.filter(t => t.word && (t.meaning_uk || t.meaning_us));
+  const qs = [];
+  const kinds = kind === 'mixed' ? ['choosing','finding','spelling'] : [kind];
+  let guard = 0;
+  while (qs.length < n && guard++ < n*50) {
+    const k = kinds[Math.floor(Math.random()*kinds.length)];
+    if (k === 'spelling') {
+      const t = terms[Math.floor(Math.random()*terms.length)];
+      if (!t.sound_uk) continue;
+      qs.push({ kind:'spelling', term: t });
+    } else if (k === 'finding') {
+      const t = terms[Math.floor(Math.random()*terms.length)];
+      const opts = pick(terms,4); if (!opts.includes(t)) { opts[0]=t; }
+      qs.push({ kind:'finding', term: t, options: shuffle(opts) });
+    } else if (k === 'choosing') {
+      const t = terms[Math.floor(Math.random()*terms.length)];
+      const types = ['prefix','root','suffix'].filter(x => t[x]);
+      if (!types.length) continue;
+      const partKind = types[Math.floor(Math.random()*types.length)];
+      const otherVals = [...new Set(terms.map(x=>x[partKind]).filter(Boolean).filter(v=>v!==t[partKind]))];
+      const distr = pick(otherVals,3);
+      qs.push({ kind:'choosing', term:t, partKind, options: shuffle([t[partKind], ...distr]) });
+    } else if (k === 'matching') {
+      const sample = pick(terms,4);
+      qs.push({ kind:'matching', terms: sample, defs: shuffle(sample.slice()) });
+    }
+  }
+  return qs;
+}
+
+function startDuo(kind) {
+  duoState.kind = kind;
+  duoState.score = 0;
+  duoState.streak = 0;
+  if (kind === 'matching') {
+    duoState.questions = [{ kind:'matching' }];
+  } else {
+    duoState.questions = buildDuoQuestions(kind, 8);
+  }
+  duoState.qi = 0;
+  $('#duoMenu').innerHTML = '';
+  renderDuoQuestion();
+}
+
+function renderDuoQuestion() {
+  updateDuoStats();
+  const area = $('#duoArea'); area.innerHTML = '';
+  if (duoState.qi >= duoState.questions.length) {
+    area.innerHTML = `<div class="question"><h3>Round complete!</h3><p class="result">Final score: ${duoState.score}</p><button class="btn" id="duoBack">Back to menu</button></div>`;
+    const b = $('#duoBack'); if (b) b.addEventListener('click', duoShowMenu);
+    return;
+  }
+  const q = duoState.questions[duoState.qi];
+  duoState.current = q;
+  if (q.kind === 'finding') {
+    const opts = q.options.map(t => `<button class="option duo-opt" data-word="${escapeHtml(t.word)}">${escapeHtml(stripHtml(t.meaning_uk||t.meaning_us||''))}</button>`).join('');
+    area.innerHTML = `<div class="question">
+      <h3>Find the meaning</h3>
+      <div class="prompt">Term: <strong>${escapeHtml(q.term.word)}</strong></div>
+      <div class="options">${opts}</div>
+      <div class="answer hidden" id="duoAns"></div>
+    </div>`;
+    area.querySelectorAll('.duo-opt').forEach(b => b.addEventListener('click', () => answerDuo(b, q.term.word, 'word')));
+  } else if (q.kind === 'choosing') {
+    const label = q.partKind === 'prefix' ? 'prefix' : q.partKind === 'root' ? 'root' : 'suffix';
+    const opts = q.options.map(v => `<button class="option duo-opt" data-val="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('');
+    area.innerHTML = `<div class="question">
+      <h3>Choosing: find the correct ${label}</h3>
+      <div class="prompt">For term: <strong>${escapeHtml(q.term.word)}</strong></div>
+      <div class="options">${opts}</div>
+      <div class="answer hidden" id="duoAns"></div>
+    </div>`;
+    area.querySelectorAll('.duo-opt').forEach(b => b.addEventListener('click', () => answerDuoChoosing(b, q)));
+  } else if (q.kind === 'spelling') {
+    const url = q.term.sound_uk ? `https://medterms.hku.hk/storage/audio/mtlist/${encodeURIComponent(q.term.sound_uk)}` : null;
+    area.innerHTML = `<div class="question">
+      <h3>Spelling: listen and type</h3>
+      ${url ? `<audio controls src="${url}"></audio>` : ''}
+      <input id="duoSpell" type="text" placeholder="Type the term…" />
+      <div style="margin-top:.5rem"><button class="btn" id="duoSpellBtn">Check</button></div>
+      <div class="answer hidden" id="duoAns"></div>
+    </div>`;
+    $('#duoSpellBtn').addEventListener('click', () => checkDuoSpelling(q));
+  } else if (q.kind === 'matching') {
+    const pairs = buildDuoQuestions('finding', 4).map(x=>x.term);
+    // fallback: render finding-like
+    const t = pairs[0];
+    area.innerHTML = `<div class="question"><h3>Matching</h3><p>Matching mini-game not available; try another category.</p><button class="btn" id="duoNext">Next</button></div>`;
+    $('#duoNext').addEventListener('click', () => { duoState.qi++; renderDuoQuestion(); });
+  }
+}
+
+function answerDuo(btn, correctWord, mode) {
+  const isCorrect = btn.dataset.word === correctWord;
+  markDuoAnswer(btn, isCorrect);
+}
+
+function answerDuoChoosing(btn, q) {
+  const isCorrect = btn.dataset.val === q.term[q.partKind];
+  markDuoAnswer(btn, isCorrect);
+}
+
+function markDuoAnswer(btn, isCorrect) {
+  const area = $('#duoArea');
+  area.querySelectorAll('.option').forEach(b => b.style.pointerEvents='none');
+  if (isCorrect) { btn.classList.add('correct'); duoState.score += 10; duoState.streak++; }
+  else { btn.classList.add('wrong'); duoState.streak = 0;
+    const correctVal = duoState.current.kind==='finding' ? duoState.current.term.word : (duoState.current.kind==='choosing' ? duoState.current.term[duoState.current.partKind] : '');
+    area.querySelectorAll('.option').forEach(b => { if ((b.dataset.word||b.dataset.val) === correctVal) b.classList.add('correct'); });
+  }
+  const ans = $('#duoAns'); if (ans) { ans.classList.remove('hidden'); ans.innerHTML = isCorrect ? 'Correct! +10' : `Answer: ${escapeHtml(duoState.current.kind==='finding'?duoState.current.term.word:duoState.current.term[duoState.current.partKind])}`; }
+  updateDuoStats();
+  setTimeout(() => { duoState.qi++; renderDuoQuestion(); }, 1200);
+}
+
+function checkDuoSpelling(q) {
+  const val = ($('#duoSpell').value||'').trim().toLowerCase();
+  const correct = val === q.term.word.toLowerCase();
+  const ans = $('#duoAns'); ans.classList.remove('hidden');
+  if (correct) { duoState.score += 10; duoState.streak++; ans.textContent = 'Correct! +10'; }
+  else { duoState.streak = 0; ans.innerHTML = `Correct: <strong>${escapeHtml(q.term.word)}</strong>`; }
+  updateDuoStats();
+  setTimeout(() => { duoState.qi++; renderDuoQuestion(); }, 1500);
+}
+
 /* ---------- wiring ---------- */
 $('#closeDetail').addEventListener('click', () => detail.close());
 detail.addEventListener('click', (e) => { if (e.target === detail) detail.close(); });
@@ -476,15 +627,26 @@ $('#catFilter').addEventListener('change', applyFilters);
 $('#modeBrowser').addEventListener('click', () => {
   $('#modeBrowser').classList.add('active');
   $('#modeTest').classList.remove('active');
+  $('#modeDuo').classList.remove('active');
   $('#browserView').hidden = false;
   $('#testView').hidden = true;
+  $('#duoView').hidden = true;
 });
 $('#modeTest').addEventListener('click', () => {
   $('#modeTest').classList.add('active');
   $('#modeBrowser').classList.remove('active');
   $('#browserView').hidden = true;
   $('#testView').hidden = false;
+  $('#duoView').hidden = true;
   if (!state.test) generateTest();
+});
+$('#modeDuo').addEventListener('click', () => {
+  $('#modeDuo').classList.add('active');
+  $('#modeTest').classList.remove('active');
+  $('#browserView').hidden = true;
+  $('#testView').hidden = true;
+  $('#duoView').hidden = false;
+  duoShowMenu();
 });
 $('#genTest').addEventListener('click', generateTest);
 $('#checkTest').addEventListener('click', gradeTest);
