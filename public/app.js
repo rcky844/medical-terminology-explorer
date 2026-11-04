@@ -158,12 +158,9 @@ function openDetail(t) {
   html += `<div class="meaning-full">${meaning}</div>`;
   html += `<dl class="info-grid">
     ${t.wordtype ? `<dt>Type</dt><dd>${escapeHtml(t.wordtype)}</dd>` : ''}
-    ${t.prefix ? `<dt>Prefix</dt><dd>${escapeHtml(t.prefix)}</dd>` : ''}
-    ${t.root ? `<dt>Root</dt><dd>${escapeHtml(t.root)}</dd>` : ''}
-    ${t.suffix ? `<dt>Suffix</dt><dd>${escapeHtml(t.suffix)}</dd>` : ''}
     ${t.syllableNo ? `<dt>Syllables</dt><dd>${escapeHtml(t.syllableNo)}</dd>` : ''}
-    ${t.level ? `<dt>Level</dt><dd>${escapeHtml(t.level)}</dd>` : ''}
-    ${t.catId ? `<dt>Category</dt><dd>${escapeHtml(t.catId)}</dd>` : ''}
+    ${t.level ? `<dt>Level</dt><dd><span class="tag">Level ${escapeHtml(t.level)}</span></dd>` : ''}
+    ${t.catId ? `<dt>Category</dt><dd><span class="tag">Cat ${escapeHtml(t.catId)}</span></dd>` : ''}
   </dl>`;
   html += wordPartsBlock(t);
   html += '<div class="media">';
