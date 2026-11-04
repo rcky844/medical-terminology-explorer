@@ -23,6 +23,11 @@ const SOURCE_MAP = {
 };
 
 async function fetchBase64(url) {
+  const isTauri = !!(window.__TAURI__ && window.__TAURI__.core && typeof window.__TAURI__.core.invoke === 'function');
+  if (isTauri) {
+    const txt = await window.__TAURI__.core.invoke('fetch_text', { url: src });
+    return decodeBase64(txt);
+  }
   const isNative = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
   if (isNative) {
     const src = SOURCE_MAP[url];

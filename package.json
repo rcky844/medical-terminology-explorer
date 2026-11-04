@@ -11,7 +11,9 @@
     "cap:add:ios": "npx cap add ios",
     "cap:sync": "npx cap sync",
     "cap:open:android": "npx cap open android",
-    "cap:open:ios": "npx cap open ios"
+    "cap:open:ios": "npx cap open ios",
+    "tauri": "tauri",
+    "tauri:build": "tauri build"
   },
   "license": "MIT",
   "devDependencies": {
@@ -20,7 +22,8 @@
     "@capacitor/cli": "^6.0.0",
     "@capacitor/core": "^6.0.0",
     "@capacitor/android": "^6.0.0",
-    "@capacitor/ios": "^6.0.0"
+    "@capacitor/ios": "^6.0.0",
+    "@tauri-apps/cli": "^2.0.0"
   },
   "build": {
     "appId": "com.rcky844.medicalexplorer",
@@ -43,6 +46,6 @@
     "linux": {
       "target": "AppImage"
     },
-    "artifactName": "medical-terminology-explorer_v${version}.${ext}"
+    "artifactName": "medical-terminology-explorer-full_v${version}.${ext}"
   }
 }

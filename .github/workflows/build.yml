@@ -89,10 +89,42 @@ jobs:
           path: ios/App/medical-terminology-explorer_v1.0.0.ipa
 
 
+
+  tauri:
+    name: Tauri (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build Tauri
+        run: npm run tauri:build
+        shell: bash
+      - name: Standardize artifact names
+        shell: bash
+        run: |
+          set -e
+          find src-tauri/target/release/bundle -type f \( -name '*.AppImage' -o -name '*.dmg' -o -name '*.exe' \) -print0 | while IFS= read -r -d '' f; do
+            ext="${f##*.}"
+            mv "$f" "medical-terminology-explorer_v1.0.0.${ext}"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tauri-${{ matrix.os }}
+          path: medical-terminology-explorer_v1.0.0.*
+
+
   release:
     name: Release
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [desktop, android, ios]
+    needs: [desktop, android, ios, tauri]
     runs-on: ubuntu-latest
     permissions:
       contents: write
