@@ -16,7 +16,21 @@ function decodeBase64(b64) {
   return new TextDecoder('utf-8').decode(bytes);
 }
 
+const SOURCE_MAP = {
+  '/api/mtlist': 'https://medterms.hku.hk/storage/mtlist.json',
+  '/api/vocab': 'https://medterms.hku.hk/storage/vocab.json',
+  '/api/wordofday': 'https://medterms.hku.hk/storage/wordofday.json'
+};
+
 async function fetchBase64(url) {
+  const isNative = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+  if (isNative) {
+    const src = SOURCE_MAP[url];
+    if (!src) throw new Error('Unknown source: ' + url);
+    const { CapacitorHttp } = await import('@capacitor/core');
+    const res = await CapacitorHttp.get({ url: src });
+    return decodeBase64(res.data);
+  }
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return decodeBase64(await res.text());
