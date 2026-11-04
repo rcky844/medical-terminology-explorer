@@ -26,7 +26,7 @@ function srDueTerms() {
 function buildSpacedDeck() {
   const { due, fresh } = srDueTerms();
   const deck = due.slice().sort(() => Math.random() - 0.5);
-  const need = Math.max(0, 12 - deck.length);
+  const need = Math.max(0, 20 - deck.length);
   const newCards = pick(fresh, need);
   deck.push(...newCards);
   spacedState.deck = pick(deck, deck.length);
