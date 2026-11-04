@@ -54,11 +54,15 @@ function vocabMatches(kind, partString) {
   for (const v of list) {
     const vtoks = (v.term.match(/[A-Za-z]+/g) || []).map(baseToken);
     let ok = false;
-    for (const seg of segments) {
-      const segBase = seg.endsWith('o') ? seg.slice(0, -1) : seg;
+    for (const segRaw of segments) {
+      const seg = segRaw.endsWith('o') ? segRaw.slice(0, -1) : segRaw;
       for (const tk of vtoks) {
         if (!tk) continue;
-        if (tk === seg || tk === segBase || seg.startsWith(tk) || tk.startsWith(seg)) { ok = true; break; }
+        if (seg.length <= 3 || tk.length <= 3) {
+          if (seg === tk) { ok = true; break; }
+        } else if (seg === tk || (seg.startsWith(tk) && seg.length - tk.length <= 2) || (tk.startsWith(seg) && tk.length - seg.length <= 2)) {
+          ok = true; break;
+        }
       }
       if (ok) break;
     }
