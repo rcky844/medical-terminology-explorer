@@ -35,42 +35,6 @@ jobs:
             dist/**/*.dmg
             dist/**/*.exe
 
-  tauri:
-    name: Tauri (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm install
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Generate Tauri icons
-        run: npx tauri icon src-tauri/icons/icon.png
-      - name: Install Linux system dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
-      - name: Build Tauri
-        run: npm run tauri:build
-      - name: Standardize artifact names
-        shell: bash
-        run: |
-          set -e
-          find src-tauri/target/release/bundle -type f \( -name '*.AppImage' -o -name '*.dmg' -o -name '*.exe' \) -print0 | while IFS= read -r -d '' f; do
-            ext="${f##*.}"
-            mv "$f" "medical-terminology-explorer_v${{ inputs.version }}.${ext}"
-          done
-      - uses: actions/upload-artifact@v4
-        with:
-          name: tauri-${{ matrix.os }}
-          path: medical-terminology-explorer_v${{ inputs.version }}.*
-
   android:
     name: Android
     runs-on: ubuntu-latest
@@ -132,7 +96,7 @@ jobs:
   release:
     name: Release
     if: ${{ inputs.create_release == true }}
-    needs: [desktop, tauri, android, ios]
+    needs: [desktop, android, ios]
     runs-on: ubuntu-latest
     permissions:
       contents: write

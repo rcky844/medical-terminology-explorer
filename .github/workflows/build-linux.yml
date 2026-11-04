@@ -22,31 +22,3 @@ jobs:
         with:
           name: desktop-linux
           path: dist/**/*.AppImage
-  tauri:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm install
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Generate Tauri icons
-        run: npx tauri icon src-tauri/icons/icon.png
-      - name: Install Linux system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
-      - name: Build Tauri
-        run: npm run tauri:build
-      - name: Standardize artifact names
-        shell: bash
-        run: |
-          set -e
-          find src-tauri/target/release/bundle -type f -name '*.AppImage' -print0 | while IFS= read -r -d '' f; do
-            mv "$f" "medical-terminology-explorer_v${{ inputs.version }}.AppImage"
-          done
-      - uses: actions/upload-artifact@v4
-        with:
-          name: tauri-linux
-          path: medical-terminology-explorer_v${{ inputs.version }}.AppImage
