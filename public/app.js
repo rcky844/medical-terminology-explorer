@@ -1,4 +1,4 @@
-const state = { terms: [], filtered: [], vocab: null, test: null };
+const state = { terms: [], filtered: [], vocab: null, test: null, wodTerms: null };
 
 const $ = (sel) => document.querySelector(sel);
 const grid = $('#grid');
@@ -25,17 +25,20 @@ async function fetchBase64(url) {
 async function load() {
   try {
     status.textContent = 'Loading terminology list and word parts…';
-    const [termText, vocabText] = await Promise.all([
+    const [termText, vocabText, wodText] = await Promise.all([
       fetchBase64('/api/mtlist'),
-      fetchBase64('/api/vocab')
+      fetchBase64('/api/vocab'),
+      fetchBase64('/api/wordofday')
     ]);
     const data = JSON.parse(termText);
     state.terms = Array.isArray(data) ? data : [];
     state.vocab = JSON.parse(vocabText);
+    state.wodTerms = JSON.parse(wodText);
     status.hidden = true;
     grid.hidden = false;
     populateFilters();
     applyFilters();
+    renderWod();
   } catch (err) {
     status.textContent = 'Failed to load data: ' + err.message;
   }
@@ -94,6 +97,51 @@ function wordPartsSummary(t) {
     if (ms.length) bits.push(`${label} ${value} = ${ms.map(m=>m.meaning_uk).join('; ')}`);
   }
   return bits.length ? bits.join(' | ') : null;
+}
+
+
+function dayOfYear() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  return Math.floor((now - start) / 86400000);
+}
+function getWod() {
+  const arr = state.wodTerms || [];
+  if (!arr.length) return null;
+  const n = dayOfYear();
+  const t = arr.length;
+  const idx = t >= 365 ? (t % n) : (n % t);
+  return arr[Number.isFinite(idx) ? idx : 0] || arr[0];
+}
+function renderWod() {
+  const t = getWod();
+  if (!t) return;
+  const sec = $('#wodSection');
+  sec.hidden = false;
+  const audioUrl = t.sound_uk ? `https://medterms.hku.hk/storage/audio/mtlist/${encodeURIComponent(t.sound_uk)}` : null;
+  const wodAudioUrl = t.wodSound ? `https://medterms.hku.hk/storage/audio/wordofday/${encodeURIComponent(t.wodSound)}` : null;
+  const imgUrl = t.image ? `https://medterms.hku.hk/storage/image/${encodeURIComponent(t.image)}` : null;
+  sec.innerHTML = `
+    <div class="wodcard">
+      <div class="wodhead"><h2>Word of the Day</h2><span class="muted">${new Date().toDateString()}</span></div>
+      <div class="wodtitle">${escapeHtml(t.word)}</div>
+      ${t.wordStress_uk ? `<div class="stress">${t.wordStress_uk}</div>` : ''}
+      ${wordPartsBlock(t)}
+      <div class="meaning-full">${t.meaning_uk || ''}</div>
+      <div class="breakdown" style="margin-top:.5rem">
+        ${t.prefix ? `<span class="chip chip-prefix">${escapeHtml(t.prefix)} <small>(prefix)</small></span>` : ''}
+        ${t.root ? `<span class="chip chip-root">${escapeHtml(t.root)} <small>(root)</small></span>` : ''}
+        ${t.suffix ? `<span class="chip chip-suffix">${escapeHtml(t.suffix)} <small>(suffix)</small></span>` : ''}
+      </div>
+      ${t.formation ? `<div><strong>Formation:</strong> ${escapeHtml(t.formation)}</div>` : ''}
+      ${t.itemNoOnRevisedList ? `<div><strong>Item number on revised list:</strong> ${escapeHtml(t.itemNoOnRevisedList)}</div>` : ''}
+      ${t.sentence ? `<div style="margin-top:.5rem"><strong>Sentence example:</strong><div>${t.sentence}</div></div>` : ''}
+      <div class="media">
+        ${audioUrl ? `<audio controls src="${audioUrl}"></audio>` : ''}
+        ${wodAudioUrl ? `<audio controls src="${wodAudioUrl}"></audio>` : ''}
+        ${imgUrl ? `<img src="${imgUrl}" alt="${escapeHtml(t.word)}" loading="lazy" />` : ''}
+      </div>
+    </div>`;
 }
 
 /* ---------- browse ---------- */
