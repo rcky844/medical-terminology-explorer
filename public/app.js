@@ -334,5 +334,30 @@ if (exportDataBtn) exportDataBtn.addEventListener('click', () => {
   URL.revokeObjectURL(url);
   const st = $('#settingsStatus'); if (st) st.textContent = 'Exported successfully.';
 });
+const importDataBtn = $('#importDataBtn');
+const importFile = $('#importFile');
+if (importDataBtn && importFile) {
+  importDataBtn.addEventListener('click', () => importFile.click());
+  importFile.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (!confirm('Importing will overwrite existing local progress. Continue?')) return;
+        Object.keys(data).forEach(k => {
+          const v = data[k];
+          localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
+        });
+        const st2 = $('#settingsStatus'); if (st2) st2.textContent = 'Imported. Refresh the page to see changes.';
+      } catch (err) {
+        const st2 = $('#settingsStatus'); if (st2) st2.textContent = 'Import failed: ' + err.message;
+      }
+    };
+    reader.readAsText(file);
+    importFile.value = '';
+  });
+}
 
 load();
