@@ -1,4 +1,4 @@
-# Medical Terminology Browser
+# Medical Terminology Explorer
 
 A small site that fetches the Medical Terminology list from
 `https://medterms.hku.hk/storage/mtlist.json` at runtime, Base64-decodes it in the
