@@ -94,6 +94,11 @@ jobs:
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
-          files: release-assets/**
+          files: |
+            release-assets/**/*.AppImage
+            release-assets/**/*.dmg
+            release-assets/**/*.exe
+            release-assets/**/*.apk
+            release-assets/**/*.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
