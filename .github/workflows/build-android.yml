@@ -1,0 +1,41 @@
+name: Build Android
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to build
+        required: true
+        default: '1.0.0'
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install generic Android debug keystore
+        run: |
+          mkdir -p ~/.android
+          cp android-keystore.jks ~/.android/debug.keystore
+      - run: npx cap add android || true
+      - run: npx cap sync android
+      - name: Build APK
+        working-directory: android
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+        run: ./gradlew assembleDebug
+      - name: Rename APK
+        run: mv android/app/build/outputs/apk/debug/*.apk medical-terminology-explorer_v${{ inputs.version }}.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: medical-terminology-explorer_v${{ inputs.version }}.apk
