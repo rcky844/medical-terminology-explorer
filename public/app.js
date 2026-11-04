@@ -308,4 +308,31 @@ function launchConfetti() {
   setTimeout(() => container.remove(), 3200);
 }
 
+/* Settings */
+const settingsBtn = $('#settingsBtn');
+if (settingsBtn) settingsBtn.addEventListener('click', () => {
+  const d = $('#settingsDialog');
+  if (d) d.showModal();
+});
+const closeSettings = $('#closeSettings');
+if (closeSettings) closeSettings.addEventListener('click', () => {
+  const d = $('#settingsDialog'); if (d) d.close();
+});
+const exportDataBtn = $('#exportDataBtn');
+if (exportDataBtn) exportDataBtn.addEventListener('click', () => {
+  const data = {};
+  for (let i=0;i<localStorage.length;i++){
+    const k = localStorage.key(i);
+    try { data[k]=JSON.parse(localStorage.getItem(k)); }
+    catch(e){ data[k]=localStorage.getItem(k); }
+  }
+  const blob = new Blob([JSON.stringify(data,null,2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'mt-explorer-user-data.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  const st = $('#settingsStatus'); if (st) st.textContent = 'Exported successfully.';
+});
+
 load();

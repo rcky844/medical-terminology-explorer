@@ -9,8 +9,13 @@
 <body>
   <header>
     <div class="wrap">
-      <h1>Medical Terminology Explorer</h1>
-      <p class="sub">Live data from <code>medterms.hku.hk</code> (Base64-decoded in your browser)</p>
+      <div class="headerrow">
+        <div>
+          <h1>Medical Terminology Explorer</h1>
+          <p class="sub">Live data from <code>medterms.hku.hk</code> (Base64-decoded in your browser)</p>
+        </div>
+        <button id="settingsBtn" class="btn secondary" aria-label="Settings">⚙ Settings</button>
+      </div>
       <nav class="nav">
         <button id="modeBrowser" class="navbtn active">Browse</button>
         <button id="modeTest" class="navbtn">Practice Test</button>
@@ -87,9 +92,17 @@
     <div class="celebrate-body"></div>
   </dialog>
 
+  <dialog id="settingsDialog">
+    <button id="closeSettings" class="close" aria-label="Close">×</button>
+    <h2>Settings</h2>
+    <p>Export all locally stored progress (test sessions, spaced repetition data/history, and daily dismissal).</p>
+    <button id="exportDataBtn" class="btn">Export user data (JSON)</button>
+    <div id="settingsStatus" class="muted"></div>
+  </dialog>
+
   <script src="/app.js"></script>
   <script src="/test.js"></script>
   <script src="/duo.js"></script>
   <script src="/spaced.js"></script>
 </body>
-</html
+</html>

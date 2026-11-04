@@ -134,3 +134,5 @@ dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(2px); }
 .srbtn.hard { background: #78350f; color: #fde68a; }
 .srbtn.good { background: #14532d; color: #bbf7d0; }
 .srbtn.easy { background: #1e3a8a; color: #bfdbfe; }
+
+.headerrow { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
