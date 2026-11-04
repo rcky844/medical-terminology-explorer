@@ -104,6 +104,8 @@ jobs:
           node-version: 20
       - run: npm install
       - uses: dtolnay/rust-toolchain@stable
+      - name: Generate Tauri icons
+        run: npx tauri icon src-tauri/icons/icon.png
       - name: Install Linux system dependencies
         if: runner.os == 'Linux'
         run: |
