@@ -117,31 +117,70 @@ function renderWod() {
   const t = getWod();
   if (!t) return;
   const sec = $('#wodSection');
+  const today = new Date().toDateString();
+  if (localStorage.getItem('wodDismissedDate') === today) {
+    sec.hidden = true;
+    const rb = $('#showWodBtn');
+    if (rb) rb.hidden = false;
+    return;
+  }
   sec.hidden = false;
+  const rb = $('#showWodBtn');
+  if (rb) rb.hidden = true;
+
   const audioUrl = t.sound_uk ? `https://medterms.hku.hk/storage/audio/mtlist/${encodeURIComponent(t.sound_uk)}` : null;
   const wodAudioUrl = t.wodSound ? `https://medterms.hku.hk/storage/audio/wordofday/${encodeURIComponent(t.wodSound)}` : null;
   const imgUrl = t.image ? `https://medterms.hku.hk/storage/image/${encodeURIComponent(t.image)}` : null;
   sec.innerHTML = `
     <div class="wodcard">
-      <div class="wodhead"><h2>Word of the Day</h2><span class="muted">${new Date().toDateString()}</span></div>
-      <div class="wodtitle">${escapeHtml(t.word)}</div>
-      ${t.wordStress_uk ? `<div class="stress">${t.wordStress_uk}</div>` : ''}
-      ${wordPartsBlock(t)}
-      <div class="meaning-full">${t.meaning_uk || ''}</div>
-      <div class="breakdown" style="margin-top:.5rem">
-        ${t.prefix ? `<span class="chip chip-prefix">${escapeHtml(t.prefix)} <small>(prefix)</small></span>` : ''}
-        ${t.root ? `<span class="chip chip-root">${escapeHtml(t.root)} <small>(root)</small></span>` : ''}
-        ${t.suffix ? `<span class="chip chip-suffix">${escapeHtml(t.suffix)} <small>(suffix)</small></span>` : ''}
+      <div class="wodhead">
+        <h2>Word of the Day</h2>
+        <div class="wodactions">
+          <button class="wodbtn" id="wodToggle">Collapse</button>
+          <button class="wodbtn" id="wodDismiss">Dismiss for today</button>
+        </div>
       </div>
-      ${t.formation ? `<div><strong>Formation:</strong> ${escapeHtml(t.formation)}</div>` : ''}
-      ${t.itemNoOnRevisedList ? `<div><strong>Item number on revised list:</strong> ${escapeHtml(t.itemNoOnRevisedList)}</div>` : ''}
-      ${t.sentence ? `<div style="margin-top:.5rem"><strong>Sentence example:</strong><div>${t.sentence}</div></div>` : ''}
-      <div class="media">
-        ${audioUrl ? `<div><div class="muted" style="margin-bottom:.25rem">Pronunciation</div><audio controls src="${audioUrl}"></audio></div>` : ''}
-        ${wodAudioUrl ? `<div><div class="muted" style="margin-bottom:.25rem">Explanation (definition + example)</div><audio controls src="${wodAudioUrl}"></audio></div>` : ''}
-        ${imgUrl ? `<img src="${imgUrl}" alt="${escapeHtml(t.word)}" loading="lazy" />` : ''}
+      <div id="wodContent">
+        <div class="wodtitle">${escapeHtml(t.word)}</div>
+        <span class="muted">${today}</span>
+        ${t.wordStress_uk ? `<div class="stress">${t.wordStress_uk}</div>` : ''}
+        ${wordPartsBlock(t)}
+        <div class="meaning-full">${t.meaning_uk || ''}</div>
+        <div class="breakdown" style="margin-top:.5rem">
+          ${t.prefix ? `<span class="chip chip-prefix">${escapeHtml(t.prefix)} <small>(prefix)</small></span>` : ''}
+          ${t.root ? `<span class="chip chip-root">${escapeHtml(t.root)} <small>(root)</small></span>` : ''}
+          ${t.suffix ? `<span class="chip chip-suffix">${escapeHtml(t.suffix)} <small>(suffix)</small></span>` : ''}
+        </div>
+        ${t.formation ? `<div><strong>Formation:</strong> ${escapeHtml(t.formation)}</div>` : ''}
+        ${t.itemNoOnRevisedList ? `<div><strong>Item number on revised list:</strong> ${escapeHtml(t.itemNoOnRevisedList)}</div>` : ''}
+        ${t.sentence ? `<div style="margin-top:.5rem"><strong>Sentence example:</strong><div>${t.sentence}</div></div>` : ''}
+        <div class="media">
+          ${audioUrl ? `<div><div class="muted" style="margin-bottom:.25rem">Pronunciation</div><audio controls src="${audioUrl}"></audio></div>` : ''}
+          ${wodAudioUrl ? `<div><div class="muted" style="margin-bottom:.25rem">Explanation (definition + example)</div><audio controls src="${wodAudioUrl}"></audio></div>` : ''}
+          ${imgUrl ? `<img src="${imgUrl}" alt="${escapeHtml(t.word)}" loading="lazy" />` : ''}
+        </div>
       </div>
     </div>`;
+
+  const toggle = $('#wodToggle');
+  const content = $('#wodContent');
+  if (toggle && content) {
+    toggle.addEventListener('click', () => {
+      const hidden = content.hidden;
+      content.hidden = !hidden;
+      toggle.textContent = hidden ? 'Collapse' : 'Expand';
+    });
+  }
+  const dismiss = $('#wodDismiss');
+  if (dismiss) {
+    dismiss.addEventListener('click', () => {
+      if (!confirm('Dismiss Word of the Day for today?')) return;
+      localStorage.setItem('wodDismissedDate', today);
+      sec.hidden = true;
+      const rb2 = $('#showWodBtn');
+      if (rb2) rb2.hidden = false;
+    });
+  }
 }
 
 /* ---------- browse ---------- */
@@ -449,5 +488,13 @@ $('#modeTest').addEventListener('click', () => {
 });
 $('#genTest').addEventListener('click', generateTest);
 $('#checkTest').addEventListener('click', gradeTest);
+const showWodBtn = $('#showWodBtn');
+if (showWodBtn) {
+  showWodBtn.addEventListener('click', () => {
+    localStorage.removeItem('wodDismissedDate');
+    showWodBtn.hidden = true;
+    if (state.wodTerms) renderWod();
+  });
+}
 
 load();

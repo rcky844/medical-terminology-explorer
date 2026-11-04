@@ -81,3 +81,8 @@ dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(2px); }
 .wodcard { background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid var(--border); border-radius: 1rem; padding: 1.25rem; }
 .wodhead { display: flex; justify-content: space-between; align-items: baseline; }
 .wodtitle { font-size: 1.8rem; color: var(--accent); font-weight: 700; margin: .25rem 0; }
+
+.wodhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; }
+.wodactions { display: flex; gap: .4rem; }
+.wodbtn { padding: .35rem .7rem; border: 1px solid var(--border); border-radius: .4rem; background: var(--panel); color: var(--text); cursor: pointer; font-size: .85rem; }
+.wodbtn:hover { border-color: var(--accent); }
