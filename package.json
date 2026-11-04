@@ -23,7 +23,7 @@
     "@capacitor/ios": "^6.0.0"
   },
   "build": {
-    "appId": "com.example.medicalexplorer",
+    "appId": "com.rcky844.medicalexplorer",
     "productName": "Medical Terminology Explorer",
     "directories": {
       "output": "dist"

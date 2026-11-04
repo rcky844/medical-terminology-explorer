@@ -1,5 +1,5 @@
 {
-  "appId": "com.example.medicalexplorer",
+  "appId": "com.rcky844.medicalexplorer",
   "appName": "Medical Terminology Explorer",
   "webDir": "public",
   "bundledWebRuntime": false
