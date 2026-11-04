@@ -133,4 +133,3 @@ $('#modeSpaced').addEventListener('click', () => {
 
 spacedState.data = srLoad();
 try { spacedState.history = JSON.parse(localStorage.getItem('srHistory') || '[]'); } catch (e) { spacedState.history = []; }
-EOF
