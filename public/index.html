@@ -15,6 +15,7 @@
         <button id="modeBrowser" class="navbtn active">Browse</button>
         <button id="modeTest" class="navbtn">Practice Test</button>
         <button id="modeDuo" class="navbtn">Duolingo</button>
+        <button id="modeSpaced" class="navbtn">Spaced</button>
       </nav>
     </div>
   </header>
@@ -64,6 +65,14 @@
       <div id="duoMenu" class="duomenu"></div>
       <div id="duoArea" class="duoarea"></div>
     </section>
+
+    <section id="spacedView" hidden>
+      <div class="spacedhead">
+        <h2>Spaced Repetition Flashcards</h2>
+        <span id="spacedStats" class="count"></span>
+      </div>
+      <div id="spacedArea" class="spacedarea"></div>
+    </section>
   </main>
 
   <dialog id="detail">
@@ -79,5 +88,6 @@
   <script src="/app.js"></script>
   <script src="/test.js"></script>
   <script src="/duo.js"></script>
+  <script src="/spaced.js"></script>
 </body>
 </html>
