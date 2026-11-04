@@ -712,4 +712,10 @@ if (jsonZipBtn) jsonZipBtn.addEventListener('click', () => exportAssetsZip(false
 const fullZipBtn = $('#exportAssetsFullZipBtn');
 if (fullZipBtn) fullZipBtn.addEventListener('click', () => exportAssetsZip(true));
 
+const nativeZoomGuard = !!(window.Capacitor && (typeof window.Capacitor.isNativePlatform === 'function' ? window.Capacitor.isNativePlatform() : (window.Capacitor.getPlatform && window.Capacitor.getPlatform() !== 'web')));
+if (nativeZoomGuard) {
+  const vp = document.querySelector('meta[name="viewport"]');
+  if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
+}
+
 load();
