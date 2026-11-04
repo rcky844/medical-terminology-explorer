@@ -137,8 +137,8 @@ function renderWod() {
       ${t.itemNoOnRevisedList ? `<div><strong>Item number on revised list:</strong> ${escapeHtml(t.itemNoOnRevisedList)}</div>` : ''}
       ${t.sentence ? `<div style="margin-top:.5rem"><strong>Sentence example:</strong><div>${t.sentence}</div></div>` : ''}
       <div class="media">
-        ${audioUrl ? `<audio controls src="${audioUrl}"></audio>` : ''}
-        ${wodAudioUrl ? `<audio controls src="${wodAudioUrl}"></audio>` : ''}
+        ${audioUrl ? `<div><div class="muted" style="margin-bottom:.25rem">Pronunciation</div><audio controls src="${audioUrl}"></audio></div>` : ''}
+        ${wodAudioUrl ? `<div><div class="muted" style="margin-bottom:.25rem">Explanation (definition + example)</div><audio controls src="${wodAudioUrl}"></audio></div>` : ''}
         ${imgUrl ? `<img src="${imgUrl}" alt="${escapeHtml(t.word)}" loading="lazy" />` : ''}
       </div>
     </div>`;
