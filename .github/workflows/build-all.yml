@@ -1,6 +1,9 @@
 name: Build All Platforms
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       version:
@@ -95,7 +98,7 @@ jobs:
 
   release:
     name: Release
-    if: ${{ inputs.create_release == true }}
+    if: ${{ github.ref_type == 'tag' || inputs.create_release == true }}
     needs: [desktop, android, ios]
     runs-on: ubuntu-latest
     permissions:
@@ -107,8 +110,8 @@ jobs:
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ inputs.version }}
-          name: v${{ inputs.version }}
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', inputs.version) }}
+          name: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', inputs.version) }}
           files: |
             release-assets/**/*.AppImage
             release-assets/**/*.dmg
