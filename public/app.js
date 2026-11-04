@@ -162,6 +162,11 @@ function openDetail(t) {
     ${t.level ? `<dt>Level</dt><dd><span class="tag">Level ${escapeHtml(t.level)}</span></dd>` : ''}
     ${t.catId ? `<dt>Category</dt><dd><span class="tag">Cat ${escapeHtml(t.catId)}</span></dd>` : ''}
   </dl>`;
+  html += `<div class="breakdown">
+    ${t.prefix ? `<span class="chip chip-prefix">${escapeHtml(t.prefix)} <small>(prefix)</small></span>` : ''}
+    ${t.root ? `<span class="chip chip-root">${escapeHtml(t.root)} <small>(root)</small></span>` : ''}
+    ${t.suffix ? `<span class="chip chip-suffix">${escapeHtml(t.suffix)} <small>(suffix)</small></span>` : ''}
+  </div>`;
   html += wordPartsBlock(t);
   html += '<div class="media">';
   if (audioUrl) html += `<audio controls src="${audioUrl}"></audio>`;

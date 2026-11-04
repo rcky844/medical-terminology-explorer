@@ -69,3 +69,10 @@ dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(2px); }
 .muted { color: var(--muted); font-style: italic; }
 .wordparts { margin-top: 1rem; padding-top: .5rem; border-top: 1px solid var(--border); }
 .wordparts h3 { margin: 0 0 .5rem; color: var(--accent2); font-size: 1.05rem; }
+
+.breakdown { display: flex; flex-wrap: wrap; gap: .6rem; margin: 1rem 0; }
+.chip { padding: .6rem 1rem; border-radius: .6rem; font-size: 1.05rem; font-weight: 600; border: 1px solid var(--border); }
+.chip small { font-weight: 400; font-size: .75rem; opacity: .85; }
+.chip-prefix { background: #1e3a8a; color: #bfdbfe; border-color: #2563eb; }
+.chip-root { background: #4c1d95; color: #ddd6fe; border-color: #7c3aed; }
+.chip-suffix { background: #831843; color: #fbcfe8; border-color: #db2777; }
