@@ -104,3 +104,10 @@ dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(2px); }
 .sessitems { margin-top: .75rem; padding-left: .5rem; border-left: 2px solid var(--border); }
 .qreview { margin: .5rem 0; font-size: .9rem; }
 .wrong { color: #ef4444; font-weight: 700; }
+
+.matchgrid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-top: .75rem; }
+.matchcol { display: flex; flex-direction: column; gap: .5rem; }
+.match-item { padding: .5rem .6rem; border: 1px solid var(--border); border-radius: .4rem; background: #0b1220; color: var(--text); cursor: pointer; text-align: left; }
+.match-item.selected { border-color: var(--accent); background: #0c4a6e; }
+.match-item.matched { border-color: #22c55e; background: #14532d; opacity: .7; }
+.match-item.wrong { border-color: #ef4444; background: #7f1d1d; }

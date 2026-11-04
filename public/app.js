@@ -581,6 +581,7 @@ function duoShowMenu() {
       <button class="duocard" data-kind="choosing"><h3>Choosing</h3><p>Find the correct suffix / root / prefix</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="finding"><h3>Finding</h3><p>Find the correct meaning</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="spelling"><h3>Spelling</h3><p>Listen and fill the answer</p><span class="tag">+10 pts</span></button>
+      <button class="duocard" data-kind="matching"><h3>Matching</h3><p>Match the meaning of a thematic group</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="mixed"><h3>Mixed</h3><p>All types combined</p><span class="tag">+10 pts</span></button>
     </div>`;
   menu.querySelectorAll('.duocard').forEach(b => b.addEventListener('click', () => startDuo(b.dataset.kind)));
@@ -624,7 +625,11 @@ function startDuo(kind) {
   duoState.kind = kind;
   duoState.score = 0;
   duoState.streak = 0;
-  duoState.questions = buildDuoQuestions(kind, 8);
+  if (kind === 'matching') {
+    duoState.questions = [{ kind: 'matching' }];
+  } else {
+    duoState.questions = buildDuoQuestions(kind, 8);
+  }
   duoState.qi = 0;
   $('#duoMenu').innerHTML = '';
   renderDuoQuestion();
@@ -659,6 +664,8 @@ function renderDuoQuestion() {
       <div class="answer hidden" id="duoAns"></div>
     </div>`;
     area.querySelectorAll('.duo-opt').forEach(b => b.addEventListener('click', () => answerChoosing(b, q)));
+  } else if (q.kind === 'matching') {
+    renderMatching();
   } else if (q.kind === 'spelling') {
     const url = q.term.sound_uk ? `https://medterms.hku.hk/storage/audio/mtlist/${encodeURIComponent(q.term.sound_uk)}` : null;
     area.innerHTML = `<div class="question">
@@ -671,6 +678,60 @@ function renderDuoQuestion() {
     const btn = $('#duoSpellBtn');
     if (btn) btn.addEventListener('click', () => checkDuoSpelling(q));
   }
+}
+
+function renderMatching() {
+  const terms = state.terms.filter(t => t.word && (t.meaning_uk || t.meaning_us));
+  // thematic group: same category with >=4 terms
+  const groups = {};
+  terms.forEach(t => { (groups[t.catId] = groups[t.catId] || []).push(t); });
+  const valid = Object.keys(groups).filter(k => groups[k].length >= 4);
+  let group = valid.length ? groups[valid[Math.floor(Math.random()*valid.length)]] : terms;
+  const sample = pick(group, 4);
+  const defs = shuffle(sample.slice());
+
+  const area = $('#duoArea');
+  let selectedTerm = null;
+  let matched = 0;
+  const total = sample.length;
+
+  function html() {
+    const left = sample.map(t => `<button class="match-item" data-side="term" data-id="${escapeHtml(t.word)}">${escapeHtml(t.word)}</button>`).join('');
+    const right = defs.map(t => `<button class="match-item" data-side="def" data-id="${escapeHtml(t.word)}">${escapeHtml(stripHtml(t.meaning_uk || t.meaning_us))}</button>`).join('');
+    return `<div class="question"><h3>Matching: thematic group</h3><p class="muted">Match each term to its meaning.</p><div class="matchgrid"><div class="matchcol">${left}</div><div class="matchcol">${right}</div></div><div id="duoAns" class="answer hidden"></div></div>`;
+  }
+  area.innerHTML = html();
+
+  const handler = (btn) => {
+    if (btn.classList.contains('matched')) return;
+    if (btn.dataset.side === 'term') {
+      area.querySelectorAll('[data-side="term"]').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedTerm = btn.dataset.id;
+    } else {
+      if (!selectedTerm) return;
+      const defId = btn.dataset.id;
+      if (defId === selectedTerm) {
+        area.querySelectorAll(`[data-id="${CSS.escape(selectedTerm)}"]`).forEach(b => { b.classList.remove('selected'); b.classList.add('matched'); b.disabled = true; });
+        matched += 1;
+        duoState.score += 10;
+        duoState.streak += 1;
+        updateDuoStats();
+        if (matched === total) {
+          const ans = $('#duoAns'); if (ans) { ans.classList.remove('hidden'); ans.innerHTML = 'All matched! +10 each'; }
+          setTimeout(() => { duoState.qi += 1; renderDuoQuestion(); }, 1200);
+        }
+      } else {
+        btn.classList.add('wrong');
+        duoState.streak = 0;
+        updateDuoStats();
+        setTimeout(() => btn.classList.remove('wrong'), 600);
+      }
+      selectedTerm = null;
+      area.querySelectorAll('[data-side="term"]').forEach(b => b.classList.remove('selected'));
+    }
+  };
+  area.querySelectorAll('.match-item').forEach(b => b.addEventListener('click', () => handler(b)));
 }
 
 function finishDuoAnswer(correct, answerText) {
