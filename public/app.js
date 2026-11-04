@@ -189,6 +189,7 @@ function renderWod() {
           <input type="date" id="wodDatePicker" class="wodbtn" value="${wodDate.toISOString().slice(0,10)}" />
           <button class="wodbtn" id="wodPrev">◀ Prev</button>
           <button class="wodbtn" id="wodNext"${isToday(wodViewDate)?' disabled':''}>Next ▶</button>
+          <button class="wodbtn" id="wodToday">Today</button>
           <button class="wodbtn" id="wodToggle">Collapse</button>
           <button class="wodbtn" id="wodDismiss">Dismiss today</button>
         </div>
@@ -231,6 +232,9 @@ function renderWod() {
   if (next) next.addEventListener('click', () => { if (!isToday(wodViewDate)) { const d=new Date(wodViewDate); d.setDate(d.getDate()+1); wodViewDate=d; renderWod(); } });
   const dp = $('#wodDatePicker');
   if (dp) dp.addEventListener('change', (e) => { if (e.target.value) { wodViewDate = new Date(e.target.value+'T00:00:00'); renderWod(); } });
+
+  const todayBtn = $('#wodToday');
+  if (todayBtn) todayBtn.addEventListener('click', () => { wodViewDate = new Date(); renderWod(); });
 
   const dismiss = $('#wodDismiss');
   if (dismiss) {
