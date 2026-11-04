@@ -784,16 +784,15 @@ $('#search').addEventListener('input', applyFilters);
 $('#levelFilter').addEventListener('change', applyFilters);
 $('#catFilter').addEventListener('change', applyFilters);
 $('#modeBrowser').addEventListener('click', () => {
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
   $('#modeBrowser').classList.add('active');
-  $('#modeTest').classList.remove('active');
-  $('#modeDuo').classList.remove('active');
   $('#browserView').hidden = false;
   $('#testView').hidden = true;
   $('#duoView').hidden = true;
 });
 $('#modeTest').addEventListener('click', () => {
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
   $('#modeTest').classList.add('active');
-  $('#modeBrowser').classList.remove('active');
   $('#browserView').hidden = true;
   $('#testView').hidden = false;
   $('#duoView').hidden = true;
@@ -801,9 +800,8 @@ $('#modeTest').addEventListener('click', () => {
   const body2 = $('#testBody'); if (body2) body2.hidden = true;
 });
 $('#modeDuo').addEventListener('click', () => {
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
   $('#modeDuo').classList.add('active');
-  $('#modeBrowser').classList.remove('active');
-  $('#modeTest').classList.remove('active');
   $('#browserView').hidden = true;
   $('#testView').hidden = true;
   $('#duoView').hidden = false;
