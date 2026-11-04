@@ -578,10 +578,12 @@ async function fetchMediaBase64(path) {
 }
 function collectMediaPaths(terms) {
   const paths = new Set();
-  (terms||[]).forEach(t => {
+  const all = (terms || []).concat(state.wodTerms || []);
+  all.forEach(t => {
     if (t.sound_uk) paths.add('storage/audio/mtlist/' + t.sound_uk);
     if (t.sound_us) paths.add('storage/audio/mtlist/' + t.sound_us);
     if (t.image) paths.add('storage/image/' + t.image);
+    if (t.wodSound) paths.add('storage/audio/wordofday/' + t.wodSound);
   });
   return [...paths];
 }
