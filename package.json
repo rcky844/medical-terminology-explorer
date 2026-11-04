@@ -2,9 +2,37 @@
   "name": "medical-terminology-explorer",
   "version": "1.0.0",
   "description": "Explorer for the HKU Medical Terminology list. Fetches and Base64-decodes live data (no local copy).",
-  "main": "server.js",
+  "main": "electron.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "desktop": "electron .",
+    "dist": "electron-builder"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.0"
+  },
+  "build": {
+    "appId": "com.example.medicalexplorer",
+    "productName": "Medical Terminology Explorer",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "public/**/*",
+      "server.js",
+      "electron.js",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
 }
