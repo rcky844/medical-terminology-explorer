@@ -350,6 +350,27 @@ function makeOddQuestion(type) {
   return null;
 }
 
+
+let testTimerInterval = null;
+function updateTimerDisplay(sec) {
+  const m = Math.floor(sec/60), s = sec % 60;
+  const el = $('#timer');
+  if (el) el.textContent = `Time: ${m}:${String(s).padStart(2,'0')}`;
+}
+function startTestTimer(seconds=600) {
+  if (testTimerInterval) clearInterval(testTimerInterval);
+  let remaining = seconds;
+  updateTimerDisplay(remaining);
+  testTimerInterval = setInterval(() => {
+    remaining -= 1;
+    updateTimerDisplay(remaining);
+    if (remaining <= 0) {
+      if (testTimerInterval) { clearInterval(testTimerInterval); testTimerInterval = null; }
+      gradeTest(true);
+    }
+  }, 1000);
+}
+
 function generateTest() {
   const terms = state.terms.filter(t => t.word && t.meaning_uk);
   const sec1 = pick(terms, 5).map(t => ({ type: 'defOfTerm', term: t, points: 2 }));
@@ -361,8 +382,9 @@ function generateTest() {
     const q = makeOddQuestion(oddTypes[oddQs.length] || 'syllables');
     if (q) oddQs.push({ type: 'odd', q, points: 2 });
   }
-  state.test = { sec1, sec2, oddQs, generatedAt: Date.now() };
+  state.test = { sec1, sec2, oddQs, generatedAt: Date.now(), graded: false };
   renderTest();
+  startTestTimer(600);
 }
 
 function renderTest() {
@@ -421,19 +443,32 @@ function renderTest() {
   $('#score').textContent = '';
 }
 
-function gradeTest() {
-  if (!state.test) return;
+function gradeTest(auto=false) {
+  if (!state.test || state.test.graded) return;
+  state.test.graded = true;
+  if (testTimerInterval) { clearInterval(testTimerInterval); testTimerInterval=null; }
   const { sec1, sec2, oddQs } = state.test;
   const questions = document.querySelectorAll('#testBody .question');
   let qi = 0, score = 0;
+  const items = [];
+
   sec1.forEach((q, i) => {
     const qEl = questions[qi++];
     const cb = qEl.querySelector('.selfok');
+    const selfCorrect = !!(cb && cb.checked);
+    if (selfCorrect) score += q.points;
     const parts = wordPartsSummary(q.term);
     const ansEl = document.getElementById('s1ans-' + i);
     ansEl.classList.remove('hidden');
     ansEl.innerHTML = `Expected: ${q.term.meaning_uk}` + (parts ? `<br><em>Word parts: ${escapeHtml(parts)}</em>` : '');
-    if (cb && cb.checked) score += q.points;
+    items.push({
+      prompt: `Write a definition of: ${q.term.word}`,
+      userAnswer: selfCorrect ? '(self-marked correct)' : '(self-marked incorrect/not marked)',
+      correctAnswer: stripHtml(q.term.meaning_uk || ''),
+      explanation: parts || '',
+      points: q.points,
+      awarded: selfCorrect
+    });
   });
   sec2.forEach((q, i) => {
     const qEl = questions[qi++];
@@ -446,6 +481,14 @@ function gradeTest() {
     const parts = wordPartsSummary(q.term);
     ansEl.innerHTML = `Expected: <strong>${escapeHtml(q.term.word)}</strong>` + (correct ? '' : ' — check your answer') +
       (parts ? `<br><em>Word parts: ${escapeHtml(parts)}</em>` : '');
+    items.push({
+      prompt: q.term.meaning_uk ? stripHtml(q.term.meaning_uk) : 'Definition',
+      userAnswer: inp.value || '',
+      correctAnswer: q.term.word,
+      explanation: parts || '',
+      points: q.points,
+      awarded: correct
+    });
   });
   oddQs.forEach((q, i) => {
     const qEl = questions[qi++];
@@ -453,169 +496,74 @@ function gradeTest() {
     const ansEl = document.getElementById('s3ans-' + i);
     ansEl.classList.remove('hidden');
     const selectedWord = selBtn ? selBtn.getAttribute('data-word') : null;
+    const isCorrect = !!(selectedWord && selectedWord === q.q.answer);
     qEl.querySelectorAll('.option').forEach(b => {
       const w = b.getAttribute('data-word');
       if (w === q.q.answer) b.classList.add('correct');
       else if (b.classList.contains('selected')) b.classList.add('wrong');
     });
     ansEl.textContent = q.q.explanation;
-    if (selectedWord && selectedWord === q.q.answer) score += q.points;
+    if (isCorrect) score += q.points;
+    items.push({
+      prompt: q.q.prompt,
+      userAnswer: selectedWord || '',
+      correctAnswer: q.q.answer,
+      explanation: q.q.explanation,
+      points: q.points,
+      awarded: isCorrect
+    });
   });
   const total = sec1.length*2 + sec2.length*2 + oddQs.length*2;
   const el = $('#score');
-  el.textContent = `Score: ${score} / ${total}`;
+  el.textContent = (auto ? 'Time expired. ' : '') + `Score: ${score} / ${total}`;
   el.classList.add('result');
+  // save session
+  const session = {
+    id: Date.now(),
+    createdAt: new Date().toISOString(),
+    score, total, timeExpired: auto,
+    items
+  };
+  const list = JSON.parse(localStorage.getItem('mtTestSessions') || '[]');
+  list.unshift(session);
+  localStorage.setItem('mtTestSessions', JSON.stringify(list.slice(0,20)));
 }
 
 
-/* ---------------- Duolingo Mode ---------------- */
-const duoState = { score: 0, streak: 0, kind: null, questions: [], qi: 0, current: null };
-
-function duoShowMenu() {
-  duoState.kind = null;
-  const area = $('#duoArea'); area.innerHTML = '';
-  const menu = $('#duoMenu');
-  menu.innerHTML = `
-    <div class="duocards">
-      <button class="duocard" data-kind="choosing"><h3>Choosing</h3><p>Find the correct suffix / root / prefix</p><span class="tag">+10 pts</span></button>
-      <button class="duocard" data-kind="finding"><h3>Finding</h3><p>Find the correct meaning</p><span class="tag">+10 pts</span></button>
-      <button class="duocard" data-kind="matching"><h3>Matching</h3><p>Match terms to definitions</p><span class="tag">+10 pts</span></button>
-      <button class="duocard" data-kind="spelling"><h3>Spelling</h3><p>Listen and fill the answer</p><span class="tag">+10 pts</span></button>
-      <button class="duocard" data-kind="mixed"><h3>Mixed</h3><p>All types combined</p><span class="tag">+10 pts</span></button>
-    </div>`;
-  menu.querySelectorAll('.duocard').forEach(b => b.addEventListener('click', () => startDuo(b.dataset.kind)));
-  updateDuoStats();
-}
-
-function updateDuoStats() {
-  const sc = $('#duoScore'); if (sc) sc.textContent = `Score: ${duoState.score}`;
-  const st = $('#duoStreak'); if (st) st.textContent = `Streak: ${duoState.streak} 🔥`;
-}
-
-function buildDuoQuestions(kind, n=8) {
-  const terms = state.terms.filter(t => t.word && (t.meaning_uk || t.meaning_us));
-  const qs = [];
-  const kinds = kind === 'mixed' ? ['choosing','finding','spelling'] : [kind];
-  let guard = 0;
-  while (qs.length < n && guard++ < n*50) {
-    const k = kinds[Math.floor(Math.random()*kinds.length)];
-    if (k === 'spelling') {
-      const t = terms[Math.floor(Math.random()*terms.length)];
-      if (!t.sound_uk) continue;
-      qs.push({ kind:'spelling', term: t });
-    } else if (k === 'finding') {
-      const t = terms[Math.floor(Math.random()*terms.length)];
-      const opts = pick(terms,4); if (!opts.includes(t)) { opts[0]=t; }
-      qs.push({ kind:'finding', term: t, options: shuffle(opts) });
-    } else if (k === 'choosing') {
-      const t = terms[Math.floor(Math.random()*terms.length)];
-      const types = ['prefix','root','suffix'].filter(x => t[x]);
-      if (!types.length) continue;
-      const partKind = types[Math.floor(Math.random()*types.length)];
-      const otherVals = [...new Set(terms.map(x=>x[partKind]).filter(Boolean).filter(v=>v!==t[partKind]))];
-      const distr = pick(otherVals,3);
-      qs.push({ kind:'choosing', term:t, partKind, options: shuffle([t[partKind], ...distr]) });
-    } else if (k === 'matching') {
-      const sample = pick(terms,4);
-      qs.push({ kind:'matching', terms: sample, defs: shuffle(sample.slice()) });
-    }
-  }
-  return qs;
-}
-
-function startDuo(kind) {
-  duoState.kind = kind;
-  duoState.score = 0;
-  duoState.streak = 0;
-  if (kind === 'matching') {
-    duoState.questions = [{ kind:'matching' }];
-  } else {
-    duoState.questions = buildDuoQuestions(kind, 8);
-  }
-  duoState.qi = 0;
-  $('#duoMenu').innerHTML = '';
-  renderDuoQuestion();
-}
-
-function renderDuoQuestion() {
-  updateDuoStats();
-  const area = $('#duoArea'); area.innerHTML = '';
-  if (duoState.qi >= duoState.questions.length) {
-    area.innerHTML = `<div class="question"><h3>Round complete!</h3><p class="result">Final score: ${duoState.score}</p><button class="btn" id="duoBack">Back to menu</button></div>`;
-    const b = $('#duoBack'); if (b) b.addEventListener('click', duoShowMenu);
-    return;
-  }
-  const q = duoState.questions[duoState.qi];
-  duoState.current = q;
-  if (q.kind === 'finding') {
-    const opts = q.options.map(t => `<button class="option duo-opt" data-word="${escapeHtml(t.word)}">${escapeHtml(stripHtml(t.meaning_uk||t.meaning_us||''))}</button>`).join('');
-    area.innerHTML = `<div class="question">
-      <h3>Find the meaning</h3>
-      <div class="prompt">Term: <strong>${escapeHtml(q.term.word)}</strong></div>
-      <div class="options">${opts}</div>
-      <div class="answer hidden" id="duoAns"></div>
-    </div>`;
-    area.querySelectorAll('.duo-opt').forEach(b => b.addEventListener('click', () => answerDuo(b, q.term.word, 'word')));
-  } else if (q.kind === 'choosing') {
-    const label = q.partKind === 'prefix' ? 'prefix' : q.partKind === 'root' ? 'root' : 'suffix';
-    const opts = q.options.map(v => `<button class="option duo-opt" data-val="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('');
-    area.innerHTML = `<div class="question">
-      <h3>Choosing: find the correct ${label}</h3>
-      <div class="prompt">For term: <strong>${escapeHtml(q.term.word)}</strong></div>
-      <div class="options">${opts}</div>
-      <div class="answer hidden" id="duoAns"></div>
-    </div>`;
-    area.querySelectorAll('.duo-opt').forEach(b => b.addEventListener('click', () => answerDuoChoosing(b, q)));
-  } else if (q.kind === 'spelling') {
-    const url = q.term.sound_uk ? `https://medterms.hku.hk/storage/audio/mtlist/${encodeURIComponent(q.term.sound_uk)}` : null;
-    area.innerHTML = `<div class="question">
-      <h3>Spelling: listen and type</h3>
-      ${url ? `<audio controls src="${url}"></audio>` : ''}
-      <input id="duoSpell" type="text" placeholder="Type the term…" />
-      <div style="margin-top:.5rem"><button class="btn" id="duoSpellBtn">Check</button></div>
-      <div class="answer hidden" id="duoAns"></div>
-    </div>`;
-    $('#duoSpellBtn').addEventListener('click', () => checkDuoSpelling(q));
-  } else if (q.kind === 'matching') {
-    const pairs = buildDuoQuestions('finding', 4).map(x=>x.term);
-    // fallback: render finding-like
-    const t = pairs[0];
-    area.innerHTML = `<div class="question"><h3>Matching</h3><p>Matching mini-game not available; try another category.</p><button class="btn" id="duoNext">Next</button></div>`;
-    $('#duoNext').addEventListener('click', () => { duoState.qi++; renderDuoQuestion(); });
-  }
-}
-
-function answerDuo(btn, correctWord, mode) {
-  const isCorrect = btn.dataset.word === correctWord;
-  markDuoAnswer(btn, isCorrect);
-}
-
-function answerDuoChoosing(btn, q) {
-  const isCorrect = btn.dataset.val === q.term[q.partKind];
-  markDuoAnswer(btn, isCorrect);
-}
-
-function markDuoAnswer(btn, isCorrect) {
-  const area = $('#duoArea');
-  area.querySelectorAll('.option').forEach(b => b.style.pointerEvents='none');
-  if (isCorrect) { btn.classList.add('correct'); duoState.score += 10; duoState.streak++; }
-  else { btn.classList.add('wrong'); duoState.streak = 0;
-    const correctVal = duoState.current.kind==='finding' ? duoState.current.term.word : (duoState.current.kind==='choosing' ? duoState.current.term[duoState.current.partKind] : '');
-    area.querySelectorAll('.option').forEach(b => { if ((b.dataset.word||b.dataset.val) === correctVal) b.classList.add('correct'); });
-  }
-  const ans = $('#duoAns'); if (ans) { ans.classList.remove('hidden'); ans.innerHTML = isCorrect ? 'Correct! +10' : `Answer: ${escapeHtml(duoState.current.kind==='finding'?duoState.current.term.word:duoState.current.term[duoState.current.partKind])}`; }
-  updateDuoStats();
-  setTimeout(() => { duoState.qi++; renderDuoQuestion(); }, 1200);
-}
-
-function checkDuoSpelling(q) {
-  const val = ($('#duoSpell').value||'').trim().toLowerCase();
-  const correct = val === q.term.word.toLowerCase();
-  const ans = $('#duoAns'); ans.classList.remove('hidden');
-  if (correct) { duoState.score += 10; duoState.streak++; ans.textContent = 'Correct! +10'; }
-  else { duoState.streak = 0; ans.innerHTML = `Correct: <strong>${escapeHtml(q.term.word)}</strong>`; }
-  updateDuoStats();
-  setTimeout(() => { duoState.qi++; renderDuoQuestion(); }, 1500);
+function showSessions() {
+  const panel = $('#sessionsPanel');
+  panel.classList.toggle('hidden');
+  if (panel.classList.contains('hidden')) return;
+  const list = JSON.parse(localStorage.getItem('mtTestSessions') || '[]');
+  if (!list.length) { panel.innerHTML = 'No saved sessions yet.'; return; }
+  panel.innerHTML = list.map(sess => `
+    <div class="session">
+      <div class="sessionhead">
+        <strong>${new Date(sess.createdAt).toLocaleString()}</strong>
+        <span>${sess.score}/${sess.total}${sess.timeExpired ? ' (time expired)' : ''}</span>
+        <button class="btn secondary sessdetail" data-id="${sess.id}">Details</button>
+      </div>
+      <div class="sessitems hidden" id="sess-${sess.id}"></div>
+    </div>
+  `).join('');
+  panel.querySelectorAll('.sessdetail').forEach(b => {
+    b.addEventListener('click', () => {
+      const id = +b.dataset.id;
+      const sess = list.find(x => x.id === id);
+      const container = document.getElementById('sess-' + id);
+      container.classList.toggle('hidden');
+      if (container.classList.contains('hidden')) return;
+      container.innerHTML = sess.items.map(it => `
+        <div class="qreview">
+          <div><strong>Q:</strong> ${escapeHtml(it.prompt)}</div>
+          <div>Your answer: ${escapeHtml(it.userAnswer || '(none)')}</div>
+          <div>Correct: ${escapeHtml(it.correctAnswer)}</div>
+          ${it.explanation ? `<div class="muted">${escapeHtml(it.explanation)}</div>` : ''}
+          <div class="${it.awarded ? 'result' : 'wrong'}">${it.awarded ? '✔' : '✘'} ${it.points} pts</div>
+        </div>
+      `).join('');
+    });
+  });
 }
 
 /* ---------- wiring ---------- */
@@ -650,7 +598,8 @@ $('#modeDuo').addEventListener('click', () => {
   duoShowMenu();
 });
 $('#genTest').addEventListener('click', generateTest);
-$('#checkTest').addEventListener('click', gradeTest);
+$('#checkTest').addEventListener('click', () => gradeTest(false));
+$('#reviewSessionsBtn').addEventListener('click', showSessions);
 const showWodBtn = $('#showWodBtn');
 if (showWodBtn) {
   showWodBtn.addEventListener('click', () => {

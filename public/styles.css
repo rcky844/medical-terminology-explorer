@@ -96,3 +96,11 @@ dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(2px); }
 .duocard:hover { border-color: var(--accent); transform: translateY(-2px); }
 .duocard h3 { margin: 0 0 .25rem; color: var(--accent); }
 .duocard p { color: var(--muted); font-size: .9rem; margin: 0 0 .5rem; }
+
+.sessions { margin: 1rem 0; padding: 1rem; background: var(--panel); border: 1px solid var(--border); border-radius: .75rem; }
+.session { border-bottom: 1px solid var(--border); padding: .75rem 0; }
+.session:last-child { border-bottom: none; }
+.sessionhead { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+.sessitems { margin-top: .75rem; padding-left: .5rem; border-left: 2px solid var(--border); }
+.qreview { margin: .5rem 0; font-size: .9rem; }
+.wrong { color: #ef4444; font-weight: 700; }
