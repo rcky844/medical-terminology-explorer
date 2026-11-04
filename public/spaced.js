@@ -61,7 +61,7 @@ function renderSpaced() {
       <div id="srBack" ${spacedState.revealed ? '' : 'hidden'}>
         <div class="meaning-full">${t.meaning_uk || ''}</div>
         ${wordPartsBlock ? wordPartsBlock(t) : ''}
-        ${audioUrl ? `<div class="media"><audio controls src="${audioUrl}"></audio></div>` : ''}
+        ${audioUrl ? `<div class="media">${audioPlayer(audioUrl)}</div>` : ''}
         <div class="sr-buttons">
           <button class="srbtn again" data-rating="again">Again</button>
           <button class="srbtn hard" data-rating="hard">Hard</button>

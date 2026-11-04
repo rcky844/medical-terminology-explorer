@@ -99,7 +99,7 @@ function renderDuoQuestion() {
     const url = q.term.sound_uk ? `https://medterms.hku.hk/storage/audio/mtlist/${encodeURIComponent(q.term.sound_uk)}` : null;
     area.innerHTML = `<div class="question">
       <h3>Spelling: listen and type</h3>
-      ${url ? `<audio controls src="${url}"></audio>` : ''}
+      ${url ? audioPlayer(url,'Listen') : ''}
       <input id="duoSpell" type="text" placeholder="Type the term…" />
       <div style="margin-top:.5rem"><button class="btn" id="duoSpellBtn">Check</button></div>
       <div class="answer hidden" id="duoAns"></div>

@@ -155,8 +155,8 @@ function renderWod() {
         ${t.itemNoOnRevisedList ? `<div><strong>Item number on revised list:</strong> ${escapeHtml(t.itemNoOnRevisedList)}</div>` : ''}
         ${t.sentence ? `<div style="margin-top:.5rem"><strong>Sentence example:</strong><div>${t.sentence}</div></div>` : ''}
         <div class="media">
-          ${audioUrl ? `<div><div class="muted" style="margin-bottom:.25rem">Pronunciation</div><audio controls src="${audioUrl}"></audio></div>` : ''}
-          ${wodAudioUrl ? `<div><div class="muted" style="margin-bottom:.25rem">Explanation (definition + example)</div><audio controls src="${wodAudioUrl}"></audio></div>` : ''}
+          ${audioUrl ? `<div><div class="muted" style="margin-bottom:.25rem">Pronunciation</div>${audioPlayer(audioUrl)}</div>` : ''}
+          ${wodAudioUrl ? `<div><div class="muted" style="margin-bottom:.25rem">Explanation (definition + example)</div>${audioPlayer(wodAudioUrl)}</div>` : ''}
           ${imgUrl ? `<img src="${imgUrl}" alt="${escapeHtml(t.word)}" loading="lazy" />` : ''}
         </div>
       </div>
@@ -260,7 +260,7 @@ function openDetail(t) {
   </div>`;
   html += wordPartsBlock(t);
   html += '<div class="media">';
-  if (audioUrl) html += `<audio controls src="${audioUrl}"></audio>`;
+  if (audioUrl) html += audioPlayer(audioUrl);
   if (imgUrl) html += `<img src="${imgUrl}" alt="${escapeHtml(t.word)}" loading="lazy" />`;
   html += '</div>';
   detailBody.innerHTML = html;
@@ -409,4 +409,22 @@ if (generatePdfBtn) generatePdfBtn.addEventListener('click', () => {
   setTimeout(() => w.print(), 600);
 });
 
+
+function audioPlayer(url, label) {
+  return `<div class="audioplayer">
+    <button type="button" class="playbtn" data-audio="${escapeHtml(url)}">▶ Play</button>
+    ${label ? `<span class="muted">${escapeHtml(label)}</span>` : ''}
+    <audio hidden preload="none" src="${escapeHtml(url)}"></audio>
+  </div>`;
+}
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest && e.target.closest('.playbtn');
+  if (!btn) return;
+  const container = btn.closest('.audioplayer');
+  const audio = container && container.querySelector('audio');
+  if (!audio) return;
+  if (audio.paused) { audio.play().catch(()=>{}); btn.textContent = '⏸ Pause'; }
+  else { audio.pause(); btn.textContent = '▶ Play'; }
+  audio.onended = () => { btn.textContent = '▶ Play'; };
+});
 load();
