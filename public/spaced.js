@@ -1,4 +1,4 @@
-const spacedState = { deck: [], index: 0, revealed: false, data: {} };
+const spacedState = { deck: [], index: 0, revealed: false, data: {}, history: [] };
 
 function srLoad() {
   try { return JSON.parse(localStorage.getItem('srData') || '{}'); } catch (e) { return {}; }
@@ -38,8 +38,9 @@ function renderSpaced() {
   const area = $('#spacedArea');
   const stats = $('#spacedStats');
   const total = Object.keys(spacedState.data).length;
+  const learned = Object.values(spacedState.data).filter(d=>d.box>=3).length;
   const dueCount = srDueTerms().due.length;
-  if (stats) stats.textContent = `Cards: ${total} • Due: ${dueCount} • Deck: ${spacedState.deck.length}`;
+  if (stats) stats.textContent = `Cards: ${total} • Learned: ${learned} • Due: ${dueCount} • Deck: ${spacedState.deck.length}`;
 
   if (!spacedState.deck.length) {
     area.innerHTML = '<div class="question"><p>No cards available.</p><button class="btn" id="srReload">Reload</button></div>';
@@ -87,6 +88,8 @@ function renderSpaced() {
       d.next = Date.now() + interval;
       spacedState.data[t.word] = d;
       srSave();
+      spacedState.history.unshift({ time: Date.now(), word: t.word, rating });
+      try { localStorage.setItem('srHistory', JSON.stringify(spacedState.history.slice(0, 200))); } catch (e) {}
       spacedState.index += 1;
       spacedState.revealed = false;
       renderSpaced();
@@ -94,8 +97,25 @@ function renderSpaced() {
   });
 }
 
+function showSpacedHistory() {
+  const panel = $('#spacedHistory');
+  panel.classList.toggle('hidden');
+  if (panel.classList.contains('hidden')) return;
+  const list = spacedState.history || [];
+  if (!list.length) { panel.innerHTML = 'No review history yet.'; return; }
+  panel.innerHTML = '<div class="sessions">' + list.map(h =>
+    `<div class="session"><strong>${new Date(h.time).toLocaleString()}</strong> — ${escapeHtml(h.word)} — ${escapeHtml(h.rating)}</div>`
+  ).join('') + '</div><div style="margin-top:.5rem"><button class="btn secondary" id="srClearHistory">Clear history</button></div>';
+  const cb = $('#srClearHistory');
+  if (cb) cb.addEventListener('click', () => { if (!confirm('Clear spaced-repetition history?')) return; spacedState.history = []; localStorage.removeItem('srHistory'); showSpacedHistory(); });
+}
+
 function startSpaced() {
   spacedState.data = srLoad();
+  try { spacedState.history = JSON.parse(localStorage.getItem('srHistory') || '[]'); } catch (e) { spacedState.history = []; }
+  const hb = $('#srHistoryBtn');
+  if (hb) hb.onclick = showSpacedHistory;
+try { spacedState.history = JSON.parse(localStorage.getItem('srHistory') || '[]'); } catch (e) { spacedState.history = []; }
   buildSpacedDeck();
   renderSpaced();
 }
@@ -111,4 +131,5 @@ $('#modeSpaced').addEventListener('click', () => {
 });
 
 spacedState.data = srLoad();
+try { spacedState.history = JSON.parse(localStorage.getItem('srHistory') || '[]'); } catch (e) { spacedState.history = []; }
 EOF
