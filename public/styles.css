@@ -1,0 +1,46 @@
+:root {
+  --bg: #0f172a;
+  --panel: #1e293b;
+  --accent: #38bdf8;
+  --accent2: #a78bfa;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --border: #334155;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--text); }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 1rem; }
+header { background: linear-gradient(135deg, #1e3a8a, #0f172a); padding: 1.5rem 0; border-bottom: 1px solid var(--border); }
+h1 { margin: 0; font-size: 1.6rem; }
+.sub { color: var(--muted); margin: .25rem 0 0; font-size: .9rem; }
+.sub code { color: var(--accent); }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: 1rem 0; }
+.toolbar input, .toolbar select { padding: .6rem .75rem; border: 1px solid var(--border); border-radius: .5rem; background: var(--panel); color: var(--text); font-size: 1rem; }
+.toolbar input { flex: 1; min-width: 200px; }
+.count { color: var(--muted); font-size: .9rem; margin-left: auto; }
+
+.status { padding: 2rem; text-align: center; color: var(--muted); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: .75rem; padding: 1rem; cursor: pointer; transition: transform .12s, border-color .12s; }
+.card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.card h3 { margin: 0 0 .25rem; color: var(--accent); font-size: 1.15rem; }
+.card .meaning { color: var(--muted); font-size: .9rem; line-height: 1.4; }
+.card .meta { margin-top: .5rem; display: flex; gap: .5rem; flex-wrap: wrap; }
+.tag { font-size: .7rem; padding: .15rem .45rem; border-radius: .35rem; background: #0b1220; border: 1px solid var(--border); color: var(--muted); }
+
+dialog { border: none; border-radius: 1rem; background: var(--panel); color: var(--text); max-width: 720px; width: 95vw; padding: 1.5rem; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(2px); }
+.close { position: absolute; top: .75rem; right: 1rem; background: none; border: none; color: var(--muted); font-size: 1.8rem; cursor: pointer; }
+.close:hover { color: var(--text); }
+.detail-title { font-size: 1.8rem; color: var(--accent); margin: 0 0 .5rem; }
+.stress { font-size: 1.1rem; color: var(--accent2); margin-bottom: 1rem; }
+.stress strong { color: #f472b6; }
+.meaning-full { line-height: 1.6; margin-bottom: 1rem; }
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem 1rem; font-size: .9rem; }
+.info-grid dt { color: var(--muted); }
+.info-grid dd { margin: 0; }
+.media { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; margin-top: 1rem; }
+.media img { max-width: 220px; border-radius: .5rem; border: 1px solid var(--border); }
+.media audio { width: 100%; }
+.hidden { display: none; }

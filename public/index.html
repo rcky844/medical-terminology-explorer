@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Medical Terminology Browser</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Medical Terminology Browser</h1>
+      <p class="sub">Live data from <code>medterms.hku.hk</code> (Base64-decoded in your browser)</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="toolbar">
+      <input id="search" type="search" placeholder="Search term, meaning, root, prefix…" autocomplete="off" />
+      <select id="levelFilter"><option value="">All levels</option></select>
+      <select id="catFilter"><option value="">All categories</option></select>
+      <span id="count" class="count"></span>
+    </section>
+
+    <section id="status" class="status">Loading terminology list…</section>
+
+    <section id="grid" class="grid" hidden></section>
+  </main>
+
+  <dialog id="detail">
+    <button id="closeDetail" class="close" aria-label="Close">×</button>
+    <div id="detailBody"></div>
+  </dialog>
+
+  <script src="/app.js"></script>
+</body>
+</html>

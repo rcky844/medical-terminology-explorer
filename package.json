@@ -1,0 +1,8 @@
+{
+  "name": "medical-terminology-browser",
+  "version": "1.0.0",
+  "description": "Browser for the HKU Medical Terminology list. Fetches and Base64-decodes live data (no local copy).",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "license": "MIT"
+}
