@@ -642,6 +642,7 @@ $('#modeTest').addEventListener('click', () => {
 });
 $('#modeDuo').addEventListener('click', () => {
   $('#modeDuo').classList.add('active');
+  $('#modeBrowser').classList.remove('active');
   $('#modeTest').classList.remove('active');
   $('#browserView').hidden = true;
   $('#testView').hidden = true;
