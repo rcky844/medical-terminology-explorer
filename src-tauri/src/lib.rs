@@ -6,8 +6,8 @@ struct FetchArgs {
 }
 
 #[tauri::command]
-fn fetch_text(args: FetchArgs) -> Result<String, String> {
-    reqwest::blocking::get(&args.url)
+fn fetch_text(url: String) -> Result<String, String> {
+    reqwest::blocking::get(&url)
         .map_err(|e| e.to_string())?
         .text()
         .map_err(|e| e.to_string())

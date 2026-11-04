@@ -41,6 +41,7 @@ async function fetchBase64(url) {
     (window.__TAURI__.tauri && window.__TAURI__.tauri.invoke) ||
     window.__TAURI__.invoke;
     rawText = await invokeFn('fetch_text', { url: src });
+    if (rawText == null) throw new Error('Tauri fetch_text returned ' + (rawText === null ? 'null' : 'undefined') + ' for ' + src);
   }
   else if (isNative) {
     const res = await fetch(src, {
@@ -98,7 +99,8 @@ async function load() {
     applyFilters();
     renderWod();
   } catch (err) {
-    status.textContent = 'Failed to load data: ' + err.message;
+    const msg = err && (err.message || (typeof err.toString === 'function' ? err.toString() : String(err)));
+    status.textContent = 'Failed to load data: ' + msg;
     console.error('Full load error:', err);
   }
 }
