@@ -12,9 +12,11 @@
       <div class="headerrow">
         <div>
           <h1>Medical Terminology Explorer</h1>
-          <p class="sub">Live data from <code>medterms.hku.hk</code> (Base64-decoded in your browser)</p>
         </div>
-        <button id="settingsBtn" class="btn secondary" aria-label="Settings">⚙ Settings</button>
+        <div class="headerbuttons">
+          <button id="settingsBtn" class="btn secondary" aria-label="Settings">⚙ Settings</button>
+          <button id="helpBtn" class="btn secondary" aria-label="Help">? Help</button>
+        </div>
       </div>
       <nav class="nav">
         <button id="modeBrowser" class="navbtn active">Browse</button>
@@ -112,6 +114,14 @@
       <button id="generatePdfBtn" class="btn" style="margin-top:.5rem">Generate PDF report</button>
     </div>
     <div id="settingsStatus" class="muted"></div>
+  </dialog>
+
+  <dialog id="helpDialog">
+    <button id="closeHelp" class="close" aria-label="Close">×</button>
+    <h2>Help</h2>
+    <p>Explorer for the HKU Medical Terminology list. Fetches and Base64-decodes live data (no local copy).</p>
+    <p>Open the official site for the official learning experience:</p>
+    <p><a href="https://medterms.hku.hk/" target="_blank" rel="noopener noreferrer">https://medterms.hku.hk/</a></p>
   </dialog>
 
   <script src="/app.js"></script>
