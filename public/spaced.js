@@ -57,7 +57,7 @@ function renderSpaced() {
   const { due } = srDueTerms(spacedState.deckKind);
   const learned = Object.keys(spacedState.data).filter(k => spacedState.data[k].box >= 3).length;
   const tracked = Object.keys(spacedState.data).length;
-  if (stats) stats.textContent = `Deck: ${spacedState.deckKind} • Cards: ${tracked} • Learned: ${learned} • Due: ${due.length} • Session: ${spacedState.deck.length}`;
+  if (stats) stats.textContent = `Cards: ${tracked} • Learned: ${learned} • Due: ${due.length} • Session: ${spacedState.deck.length}`;
 
   if (spacedState.timerInterval) { clearInterval(spacedState.timerInterval); spacedState.timerInterval = null; }
   if (!spacedState.deck.length) {
@@ -152,9 +152,14 @@ function startSpaced() {
   const hb = $('#srHistoryBtn');
   if (hb) hb.onclick = showSpacedHistory;
   const termsBtn = $('#deckTerms');
-  if (termsBtn) termsBtn.onclick = () => { buildSpacedDeck('terms'); renderSpaced(); };
   const partsBtn = $('#deckParts');
-  if (partsBtn) partsBtn.onclick = () => { buildSpacedDeck('parts'); renderSpaced(); };
+  function markDeck() {
+    if (termsBtn) termsBtn.classList.toggle('active', spacedState.deckKind === 'terms');
+    if (partsBtn) partsBtn.classList.toggle('active', spacedState.deckKind === 'parts');
+  }
+  if (termsBtn) termsBtn.onclick = () => { buildSpacedDeck('terms'); spacedState.deckKind='terms'; markDeck(); renderSpaced(); };
+  if (partsBtn) partsBtn.onclick = () => { buildSpacedDeck('parts'); spacedState.deckKind='parts'; markDeck(); renderSpaced(); };
+  markDeck();
   buildSpacedDeck(spacedState.deckKind || 'terms');
   renderSpaced();
 }
