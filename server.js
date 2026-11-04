@@ -55,12 +55,31 @@ function proxy(url, req, res) {
   });
 }
 
+
+function proxyAsset(url, req, res) {
+  https.get(url, (upstream) => {
+    res.statusCode = upstream.statusCode || 200;
+    const ct = upstream.headers['content-type'];
+    if (ct) res.setHeader('Content-Type', ct);
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    upstream.pipe(res);
+  }).on('error', (e) => {
+    res.statusCode = 502;
+    res.end('Bad gateway: ' + e.message);
+  });
+}
+
 const server = http.createServer((req, res) => {
   if (req.url.startsWith('/api/mtlist')) proxy(TARGET_URL, req, res);
   else if (req.url.startsWith('/api/vocab')) proxy(VOCAB_URL, req, res);
   else if (req.url.startsWith('/api/wordofday')) proxy(WOD_URL, req, res);
   else if (req.url.startsWith('/api/category')) proxy(CATEGORY_URL, req, res);
-  else serveStatic(req, res);
+  else if (req.url.startsWith('/api/asset')) {
+    const u = new URL(req.url, 'http://localhost');
+    const assetPath = u.searchParams.get('path') || '';
+    if (!assetPath.startsWith('/storage/')) { res.statusCode = 400; res.end('Bad path'); return; }
+    proxyAsset('https://medterms.hku.hk' + assetPath, req, res);
+  } else serveStatic(req, res);
 });
 
 server.listen(PORT, () => {

@@ -62,12 +62,26 @@ async function fetchBase64(url) {
 async function load() {
   try {
     status.textContent = 'Loading terminology list and word parts…';
-    const [termText, vocabText, wodText, catText] = await Promise.all([
-      fetchBase64('/api/mtlist'),
-      fetchBase64('/api/vocab'),
-      fetchBase64('/api/wordofday'),
-      fetchBase64('/api/category')
-    ]);
+    let termText, vocabText, wodText, catText;
+    const offlineEnabled = localStorage.getItem('offlineMode') === '1';
+    const cachedAssets = (offlineEnabled ? (JSON.parse(localStorage.getItem('offlineAssets') || 'null')) : null);
+    if (cachedAssets && cachedAssets.mtlist && cachedAssets.vocab && cachedAssets.wod && cachedAssets.category) {
+      termText = cachedAssets.mtlist;
+      vocabText = cachedAssets.vocab;
+      wodText = cachedAssets.wod;
+      catText = cachedAssets.category;
+    } else {
+      const res = await Promise.all([
+        fetchBase64('/api/mtlist'),
+        fetchBase64('/api/vocab'),
+        fetchBase64('/api/wordofday'),
+        fetchBase64('/api/category')
+      ]);
+      termText = res[0]; vocabText = res[1]; wodText = res[2]; catText = res[3];
+      if (offlineEnabled) {
+        localStorage.setItem('offlineAssets', JSON.stringify({ mtlist: termText, vocab: vocabText, wod: wodText, category: catText }));
+      }
+    }
 
     const parseOrThrow = (text, label) => {
       const trimmed = (text || '').trim();
@@ -525,5 +539,177 @@ const helpBtn = $('#helpBtn');
 if (helpBtn) helpBtn.addEventListener('click', () => { const d = $('#helpDialog'); if (d) d.showModal(); });
 const closeHelp = $('#closeHelp');
 if (closeHelp) closeHelp.addEventListener('click', () => { const d = $('#helpDialog'); if (d) d.close(); });
+
+/* Offline assets */
+const offlineModeCheckbox = $('#offlineMode');
+if (offlineModeCheckbox) {
+  offlineModeCheckbox.checked = localStorage.getItem('offlineMode') === '1';
+  offlineModeCheckbox.addEventListener('change', () => {
+    localStorage.setItem('offlineMode', offlineModeCheckbox.checked ? '1' : '0');
+    const st = $('#settingsStatus'); if (st) st.textContent = 'Offline mode ' + (offlineModeCheckbox.checked ? 'enabled.' : 'disabled.');
+  });
+}
+function crc32(bytes) {
+  let crc = -1;
+  for (let i=0;i<bytes.length;i++) {
+    crc ^= bytes[i];
+    for (let j=0;j<8;j++) crc = (crc>>>1) ^ (0xEDB88320 & -(crc & 1));
+  }
+  return (crc ^ -1) >>> 0;
+}
+
+function base64ToBytes(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  return bytes;
+}
+async function fetchMediaBase64(path) {
+  const clean = path.startsWith('/') ? path : ('/' + path);
+  const isNative = !!(window.Capacitor && (typeof window.Capacitor.isNativePlatform === 'function' ? window.Capacitor.isNativePlatform() : (window.Capacitor.getPlatform && window.Capacitor.getPlatform() !== 'web')));
+  const url = isNative ? ('https://medterms.hku.hk' + clean) : ('/api/asset?path=' + encodeURIComponent(clean));
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const buf = await res.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let bin = '';
+  for (let i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+function collectMediaPaths(terms) {
+  const paths = new Set();
+  (terms||[]).forEach(t => {
+    if (t.sound_uk) paths.add('storage/audio/mtlist/' + t.sound_uk);
+    if (t.sound_us) paths.add('storage/audio/mtlist/' + t.sound_us);
+    if (t.image) paths.add('storage/image/' + t.image);
+  });
+  return [...paths];
+}
+
+function createZip(files) {
+  const enc = new TextEncoder();
+  const locals = [];
+  const centrals = [];
+  let offset = 0;
+  for (const f of files) {
+    let data;
+  if (f.base64) { data = base64ToBytes(f.base64); }
+  else if (f.data instanceof Uint8Array) { data = f.data; }
+  else { data = enc.encode(f.content || ''); }
+    const name = enc.encode(f.path);
+    const crc = crc32(data);
+    const lh = new Uint8Array(30 + name.length);
+    const lv = new DataView(lh.buffer);
+    lv.setUint32(0, 0x04034b50, true);
+    lv.setUint16(4, 20, true);
+    lv.setUint16(6, 0, true);
+    lv.setUint16(8, 0, true);
+    lv.setUint16(10, 0, true);
+    lv.setUint16(12, 0, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, data.length, true);
+    lv.setUint32(22, data.length, true);
+    lv.setUint16(26, name.length, true);
+    lv.setUint16(28, 0, true);
+    lh.set(name, 30);
+    locals.push(lh, data);
+    const cd = new Uint8Array(46 + name.length);
+    const cv = new DataView(cd.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0, true);
+    cv.setUint16(10, 0, true);
+    cv.setUint16(12, 0, true);
+    cv.setUint16(14, 0, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, data.length, true);
+    cv.setUint32(24, data.length, true);
+    cv.setUint16(28, name.length, true);
+    cv.setUint16(30, 0, true);
+    cv.setUint16(32, 0, true);
+    cv.setUint16(34, 0, true);
+    cv.setUint16(36, 0, true);
+    cv.setUint32(38, 0, true);
+    cv.setUint32(42, offset, true);
+    cd.set(name, 46);
+    centrals.push(cd);
+    offset += lh.length + data.length;
+  }
+  const cdOffset = offset;
+  let cdSize = 0;
+  for (const c of centrals) cdSize += c.length;
+  const end = new Uint8Array(22);
+  const ev = new DataView(end.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(4, 0, true);
+  ev.setUint16(6, 0, true);
+  ev.setUint16(8, centrals.length, true);
+  ev.setUint16(10, centrals.length, true);
+  ev.setUint32(12, cdSize, true);
+  ev.setUint32(16, cdOffset, true);
+  ev.setUint16(20, 0, true);
+  const parts = [...locals];
+  for (const c of centrals) parts.push(c);
+  parts.push(end);
+  return new Blob(parts, { type: 'application/zip' });
+}
+function getOfflineAssets() {
+  try { return JSON.parse(localStorage.getItem('offlineAssets') || 'null') || {}; } catch (e) { return {}; }
+}
+async function prepareOfflineAssets() {
+  const [mt, vb, wd, ct] = await Promise.all([
+    fetchBase64('/api/mtlist'), fetchBase64('/api/vocab'), fetchBase64('/api/wordofday'), fetchBase64('/api/category')
+  ]);
+  const assets = { mtlist: mt, vocab: vb, wod: wd, category: ct };
+  localStorage.setItem('offlineAssets', JSON.stringify(assets));
+  return assets;
+}
+const prepareOfflineBtn = $('#prepareOfflineBtn');
+if (prepareOfflineBtn) prepareOfflineBtn.addEventListener('click', async () => {
+  const st = $('#settingsStatus'); if (st) st.textContent = 'Preparing offline assets…';
+  try { await prepareOfflineAssets(); if (st) st.textContent = 'Offline assets prepared.'; }
+  catch (e) { if (st) st.textContent = 'Prepare failed: ' + e.message; }
+});
+async function exportAssetsZip(includeMedia) {
+  const st = $('#settingsStatus'); if (st) st.textContent = 'Exporting assets zip…';
+  try {
+    const [mt, vb, wd, ct] = await Promise.all([
+      fetchBase64('/api/mtlist'), fetchBase64('/api/vocab'), fetchBase64('/api/wordofday'), fetchBase64('/api/category')
+    ]);
+    const files = [
+      { path: 'storage/mtlist.json', content: mt },
+      { path: 'storage/vocab.json', content: vb },
+      { path: 'storage/wordofday.json', content: wd },
+      { path: 'storage/category.json', content: ct }
+    ];
+    if (includeMedia) {
+      const terms = JSON.parse(mt);
+      const paths = collectMediaPaths(terms);
+      const st2 = $('#settingsStatus');
+      const media = {};
+      let i = 0;
+      for (const p of paths) {
+        i++;
+        if (st2) st2.textContent = `Exporting assets (${i}/${paths.length} media)…`;
+        try { media[p] = await fetchMediaBase64(p); } catch (e) {}
+      }
+      Object.entries(media).forEach(([p, b64]) => files.push({ path: p, base64: b64 }));
+    }
+    const blob = createZip(files);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'assets-' + Math.floor(Date.now()/1000) + '.zip';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    if (st) st.textContent = 'Assets zip exported.';
+  } catch (e) {
+    if (st) st.textContent = 'Export failed: ' + e.message;
+  }
+}
+const jsonZipBtn = $('#exportAssetsJsonZipBtn');
+if (jsonZipBtn) jsonZipBtn.addEventListener('click', () => exportAssetsZip(false));
+const fullZipBtn = $('#exportAssetsFullZipBtn');
+if (fullZipBtn) fullZipBtn.addEventListener('click', () => exportAssetsZip(true));
 
 load();
