@@ -1,4 +1,5 @@
 const state = { terms: [], filtered: [], vocab: null, test: null, wodTerms: null };
+let wodOffset = 0;
 
 const $ = (sel) => document.querySelector(sel);
 const grid = $('#grid');
@@ -154,7 +155,7 @@ function dayOfYear() {
 function getWod() {
   const arr = state.wodTerms || [];
   if (!arr.length) return null;
-  const n = dayOfYear();
+  const n = Math.max(0, dayOfYear() - wodOffset);
   const t = arr.length;
   const idx = t >= 365 ? (t % n) : (n % t);
   return arr[Number.isFinite(idx) ? idx : 0] || arr[0];
@@ -176,16 +177,20 @@ function renderWod() {
 
   const audioUrl = t.sound_uk ? `https://medterms.hku.hk/storage/audio/mtlist/${encodeURIComponent(t.sound_uk)}` : null;
   const wodAudioUrl = t.wodSound ? `https://medterms.hku.hk/storage/audio/wordofday/${encodeURIComponent(t.wodSound)}` : null;
+  const wodDate = new Date(Date.now() - wodOffset*86400000);
   const imgUrl = t.image ? `https://medterms.hku.hk/storage/image/${encodeURIComponent(t.image)}` : null;
   sec.innerHTML = `
     <div class="wodcard">
       <div class="wodhead">
         <h2>Word of the Day</h2>
         <div class="wodactions">
+          <button class="wodbtn" id="wodPrev">◀ Previous day</button>
+          <button class="wodbtn" id="wodNext"${wodOffset===0?' disabled':''}>Next day ▶</button>
           <button class="wodbtn" id="wodToggle">Collapse</button>
           <button class="wodbtn" id="wodDismiss">Dismiss for today</button>
         </div>
       </div>
+      <div class="muted" style="margin-bottom:.5rem">${wodDate.toDateString()}${wodOffset>0?' (past)':''}</div>
       <div id="wodContent">
         <div class="wodtitle">${escapeHtml(t.word)}</div>
         <span class="muted">${today}</span>
@@ -217,6 +222,11 @@ function renderWod() {
       toggle.textContent = hidden ? 'Collapse' : 'Expand';
     });
   }
+  const prev = $('#wodPrev');
+  if (prev) prev.addEventListener('click', () => { wodOffset += 1; renderWod(); });
+  const next = $('#wodNext');
+  if (next) next.addEventListener('click', () => { if (wodOffset>0) { wodOffset -= 1; renderWod(); } });
+
   const dismiss = $('#wodDismiss');
   if (dismiss) {
     dismiss.addEventListener('click', () => {
@@ -288,6 +298,7 @@ function openDetail(t) {
   const meaning = t.meaning_uk || t.meaning_us || '';
   const audioName = t.sound_uk || t.sound_us;
   const audioUrl = audioName ? `https://medterms.hku.hk/storage/audio/mtlist/${encodeURIComponent(audioName)}` : null;
+  const wodDate = new Date(Date.now() - wodOffset*86400000);
   const imgUrl = t.image ? `https://medterms.hku.hk/storage/image/${encodeURIComponent(t.image)}` : null;
 
   let html = `<h2 class="detail-title">${escapeHtml(t.word)}</h2>`;
