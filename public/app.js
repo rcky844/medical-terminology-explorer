@@ -1,4 +1,4 @@
-const state = { terms: [], filtered: [], test: null };
+const state = { terms: [], filtered: [], vocab: null, test: null };
 
 const $ = (sel) => document.querySelector(sel);
 const grid = $('#grid');
@@ -16,23 +16,83 @@ function decodeBase64(b64) {
   return new TextDecoder('utf-8').decode(bytes);
 }
 
+async function fetchBase64(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return decodeBase64(await res.text());
+}
+
 async function load() {
   try {
-    const res = await fetch('/api/mtlist');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const b64 = await res.text();
-    const jsonText = decodeBase64(b64);
-    const data = JSON.parse(jsonText);
+    status.textContent = 'Loading terminology list and word parts…';
+    const [termText, vocabText] = await Promise.all([
+      fetchBase64('/api/mtlist'),
+      fetchBase64('/api/vocab')
+    ]);
+    const data = JSON.parse(termText);
     state.terms = Array.isArray(data) ? data : [];
+    state.vocab = JSON.parse(vocabText);
     status.hidden = true;
     grid.hidden = false;
     populateFilters();
     applyFilters();
   } catch (err) {
-    status.textContent = 'Failed to load terminology list: ' + err.message;
+    status.textContent = 'Failed to load data: ' + err.message;
   }
 }
 
+/* ---------- vocab helpers ---------- */
+function canon(s) { return (s || '').toLowerCase().replace(/[^a-z]/g, ''); }
+function baseToken(t) { return (t || '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z]/g, '').replace(/o$/, ''); }
+
+function vocabMatches(kind, partString) {
+  if (!partString || !state.vocab) return [];
+  const list = state.vocab[kind] || [];
+  const segments = String(partString).split(/[^A-Za-z]+/).filter(Boolean)
+    .map(canon).filter(Boolean);
+  const found = [];
+  for (const v of list) {
+    const vtoks = (v.term.match(/[A-Za-z]+/g) || []).map(baseToken);
+    let ok = false;
+    for (const seg of segments) {
+      const segBase = seg.endsWith('o') ? seg.slice(0, -1) : seg;
+      for (const tk of vtoks) {
+        if (!tk) continue;
+        if (tk === seg || tk === segBase || seg.startsWith(tk) || tk.startsWith(seg)) { ok = true; break; }
+      }
+      if (ok) break;
+    }
+    if (ok) found.push(v);
+  }
+  return found;
+}
+
+function wordPartsBlock(t) {
+  const rows = [];
+  const defs = (label, kind, value) => {
+    if (!value) return;
+    const ms = vocabMatches(kind, value);
+    const meaning = ms.length ? ms.map(m => `${escapeHtml(m.term)}: ${escapeHtml(m.meaning_uk)}`).join('<br>') : '<span class="muted">no matching entry</span>';
+    rows.push(`<dt>${escapeHtml(label)}: ${escapeHtml(value)}</dt><dd>${meaning}</dd>`);
+  };
+  defs('Prefix', 'prefix', t.prefix);
+  defs('Root', 'root', t.root);
+  defs('Suffix', 'suffix', t.suffix);
+  if (!rows.length) return '';
+  return `<div class="wordparts"><h3>Word parts</h3><dl class="info-grid">${rows.join('')}</dl></div>`;
+}
+
+function wordPartsSummary(t) {
+  const bits = [];
+  for (const [label, kind, value] of [['prefix','prefix',t.prefix],['root','root',t.root],['suffix','suffix',t.suffix]]) {
+    if (!value) continue;
+    const ms = vocabMatches(kind, value);
+    if (ms.length) bits.push(`${label} ${value} = ${ms.map(m=>m.meaning_uk).join('; ')}`);
+  }
+  return bits.length ? bits.join(' | ') : null;
+}
+
+/* ---------- browse ---------- */
 function populateFilters() {
   const levels = [...new Set(state.terms.map(t => t.level).filter(Boolean))].sort();
   const cats = [...new Set(state.terms.map(t => t.catId).filter(Boolean))].sort((a,b)=>+a-+b);
@@ -105,6 +165,7 @@ function openDetail(t) {
     ${t.level ? `<dt>Level</dt><dd>${escapeHtml(t.level)}</dd>` : ''}
     ${t.catId ? `<dt>Category</dt><dd>${escapeHtml(t.catId)}</dd>` : ''}
   </dl>`;
+  html += wordPartsBlock(t);
   html += '<div class="media">';
   if (audioUrl) html += `<audio controls src="${audioUrl}"></audio>`;
   if (imgUrl) html += `<img src="${imgUrl}" alt="${escapeHtml(t.word)}" loading="lazy" />`;
@@ -114,7 +175,6 @@ function openDetail(t) {
 }
 
 /* ---------------- Practice Test ---------------- */
-
 function pick(arr, n) {
   const copy = arr.slice();
   const out = [];
@@ -124,7 +184,14 @@ function pick(arr, n) {
   }
   return out;
 }
-
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 function stressIndex(t) {
   const html = t.wordStress_uk || t.wordStress_us;
   if (!html) return null;
@@ -134,14 +201,11 @@ function stressIndex(t) {
   const idx = chunks.findIndex(c => c === m[1]);
   return { idx, chunks: chunks.length };
 }
-
 function makeOddQuestion(type) {
-  // returns {prompt, options:[terms], answerIndex, explanation}
   const terms = state.terms;
   let attempts = 0;
   while (attempts++ < 200) {
     if (type === 'syllables') {
-      // two same syllable count, one different
       const counts = {};
       terms.forEach(t => { counts[t.syllableNo] = counts[t.syllableNo] || []; counts[t.syllableNo].push(t); });
       const validCounts = Object.keys(counts).filter(k => counts[k].length >= 2);
@@ -152,12 +216,8 @@ function makeOddQuestion(type) {
       const samePair = pick(counts[c1], 2);
       const odd = pick(counts[c2], 1)[0];
       const options = shuffle([samePair[0], samePair[1], odd]);
-      return {
-        prompt: 'Which word has a different number of syllables?',
-        options,
-        answer: odd.word,
-        explanation: odd.word + ' has ' + odd.syllableNo + ' syllables; the others have ' + c1 + '.'
-      };
+      return { prompt: 'Which word has a different number of syllables?', options, answer: odd.word,
+        explanation: odd.word + ' has ' + odd.syllableNo + ' syllables; the others have ' + c1 + '.' };
     }
     if (type === 'sound') {
       const groups = {};
@@ -170,12 +230,8 @@ function makeOddQuestion(type) {
       const samePair = pick(groups[g1], 2);
       const odd = pick(groups[g2], 1)[0];
       const options = shuffle([samePair[0], samePair[1], odd]);
-      return {
-        prompt: 'Which word begins with a different sound (initial letter)?',
-        options,
-        answer: odd.word,
-        explanation: odd.word + ' begins with "' + odd.word[0].toUpperCase() + '"; the others begin with "' + g1.toUpperCase() + '".'
-      };
+      return { prompt: 'Which word begins with a different sound (initial letter)?', options, answer: odd.word,
+        explanation: odd.word + ' begins with "' + odd.word[0].toUpperCase() + '"; the others begin with "' + g1.toUpperCase() + '".' };
     }
     if (type === 'stress') {
       const groups = {};
@@ -194,43 +250,17 @@ function makeOddQuestion(type) {
       const samePair = pick(groups[g1], 2);
       const odd = pick(groups[g2], 1)[0];
       const options = shuffle([samePair[0], samePair[1], odd]);
-      return {
-        prompt: 'Which word has a different stress pattern (stress on a different syllable)?',
-        options,
-        answer: odd.word,
-        explanation: 'Stress position differs for ' + odd.word + '.'
-      };
+      return { prompt: 'Which word has a different stress pattern (stress on a different syllable)?', options, answer: odd.word,
+        explanation: 'Stress position differs for ' + odd.word + '.' };
     }
   }
   return null;
 }
 
-function shuffle(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 function generateTest() {
   const terms = state.terms.filter(t => t.word && t.meaning_uk);
-  // Section 1: write a definition of given term (terms with UK meaning)
-  const sec1Terms = pick(terms, 5);
-  const sec1 = sec1Terms.map(t => ({
-    type: 'defOfTerm',
-    term: t,
-    points: 2
-  }));
-  // Section 2: term from definition
-  const sec2Terms = pick(terms, 5);
-  const sec2 = sec2Terms.map(t => ({
-    type: 'termOfDef',
-    term: t,
-    points: 2
-  }));
-  // Section 3: odd one out
+  const sec1 = pick(terms, 5).map(t => ({ type: 'defOfTerm', term: t, points: 2 }));
+  const sec2 = pick(terms, 5).map(t => ({ type: 'termOfDef', term: t, points: 2 }));
   const oddTypes = ['syllables','syllables','syllables','sound','sound','stress','stress','stress','syllables','stress'];
   const oddQs = [];
   let tries = 0;
@@ -238,7 +268,6 @@ function generateTest() {
     const q = makeOddQuestion(oddTypes[oddQs.length] || 'syllables');
     if (q) oddQs.push({ type: 'odd', q, points: 2 });
   }
-
   state.test = { sec1, sec2, oddQs, generatedAt: Date.now() };
   renderTest();
 }
@@ -248,126 +277,109 @@ function renderTest() {
   body.innerHTML = '';
   if (!state.test) return;
   const { sec1, sec2, oddQs } = state.test;
-
   let idx = 0;
-  // Section 1
   body.insertAdjacentHTML('beforeend', '<div class="sectiontitle">Section 1: Write a definition of the following medical terms (10 points)</div>');
   sec1.forEach((q, i) => {
     idx++;
     const el = document.createElement('div');
     el.className = 'question';
-    el.dataset.qid = 's1-' + i;
     el.innerHTML = `
       <h3>Q${idx} (2 marks)</h3>
       <div class="prompt"><strong>${escapeHtml(q.term.word)}</strong></div>
       <input type="text" class="s1input" placeholder="Your definition…" />
-      <div class="answer hidden" id="s1ans-${i}">Expected: ${q.term.meaning_uk}</div>
+      <div class="answer hidden" id="s1ans-${i}"></div>
       <div class="selfmark">
         <label><input type="checkbox" class="selfok" /> I got this correct</label>
       </div>`;
     body.appendChild(el);
   });
-
-  // Section 2
   body.insertAdjacentHTML('beforeend', '<div class="sectiontitle">Section 2: Give the medical term for the following definitions (10 points)</div>');
   sec2.forEach((q, i) => {
     idx++;
     const el = document.createElement('div');
     el.className = 'question';
-    el.dataset.qid = 's2-' + i;
     el.innerHTML = `
       <h3>Q${idx} (2 marks)</h3>
       <div class="prompt">${q.term.meaning_uk}</div>
       <input type="text" class="s2input" placeholder="Medical term…" />
-      <div class="answer hidden" id="s2ans-${i}">Expected: <strong>${escapeHtml(q.term.word)}</strong></div>`;
+      <div class="answer hidden" id="s2ans-${i}"></div>`;
     body.appendChild(el);
   });
-
-  // Section 3
   body.insertAdjacentHTML('beforeend', '<div class="sectiontitle">Section 3: Odd one out (10 questions, 2 marks each)</div>');
   oddQs.forEach((q, i) => {
     idx++;
-    const optionsHtml = q.q.options.map((t, oi) =>
-      `<button class="option" data-qi="${i}" data-word="${escapeHtml(t.word)}">${escapeHtml(t.word)}</button>`).join('');
+    const optionsHtml = q.q.options.map((t) =>
+      `<button class="option" data-word="${escapeHtml(t.word)}">${escapeHtml(t.word)}</button>`).join('');
     const el = document.createElement('div');
     el.className = 'question';
-    el.dataset.qid = 's3-' + i;
     el.innerHTML = `
       <h3>Q${idx} (2 marks)</h3>
       <div class="prompt">${escapeHtml(q.q.prompt)}</div>
       <div class="options">${optionsHtml}</div>
-      <div class="answer hidden" id="s3ans-${i}">${escapeHtml(q.q.explanation)}</div>`;
+      <div class="answer hidden" id="s3ans-${i}"></div>`;
     body.appendChild(el);
-    // selection handlers
     el.querySelectorAll('.option').forEach(btn => {
       btn.addEventListener('click', () => {
         el.querySelectorAll('.option').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
-        btn.dataset.selected = '1';
       });
     });
   });
-
   $('#score').textContent = '';
 }
 
 function gradeTest() {
   if (!state.test) return;
   const { sec1, sec2, oddQs } = state.test;
-  let score = 0;
-  // Section1: count checked
-  const s1Els = document.querySelectorAll('#testBody .question');
-  // easier: DOM order: first 5 s1, next 5 s2, rest s3
   const questions = document.querySelectorAll('#testBody .question');
-  let qIndex = 0;
-  // S1
+  let qi = 0, score = 0;
   sec1.forEach((q, i) => {
-    const qEl = questions[qIndex++];
+    const qEl = questions[qi++];
     const cb = qEl.querySelector('.selfok');
-    document.getElementById('s1ans-' + i).classList.remove('hidden');
+    const parts = wordPartsSummary(q.term);
+    const ansEl = document.getElementById('s1ans-' + i);
+    ansEl.classList.remove('hidden');
+    ansEl.innerHTML = `Expected: ${q.term.meaning_uk}` + (parts ? `<br><em>Word parts: ${escapeHtml(parts)}</em>` : '');
     if (cb && cb.checked) score += q.points;
   });
-  // S2
   sec2.forEach((q, i) => {
-    const qEl = questions[qIndex++];
+    const qEl = questions[qi++];
     const inp = qEl.querySelector('.s2input');
-    document.getElementById('s2ans-' + i).classList.remove('hidden');
+    const ansEl = document.getElementById('s2ans-' + i);
+    ansEl.classList.remove('hidden');
     const val = (inp.value || '').trim().toLowerCase();
-    if (val && val === q.term.word.toLowerCase()) score += q.points;
-    else if (val) {
-      // partial: maybe show
-    }
+    const correct = val && val === q.term.word.toLowerCase();
+    if (correct) score += q.points;
+    const parts = wordPartsSummary(q.term);
+    ansEl.innerHTML = `Expected: <strong>${escapeHtml(q.term.word)}</strong>` + (correct ? '' : ' — check your answer') +
+      (parts ? `<br><em>Word parts: ${escapeHtml(parts)}</em>` : '');
   });
-  // S3
   oddQs.forEach((q, i) => {
-    const qEl = questions[qIndex++];
+    const qEl = questions[qi++];
     const selBtn = qEl.querySelector('.option.selected');
     const ansEl = document.getElementById('s3ans-' + i);
     ansEl.classList.remove('hidden');
     const selectedWord = selBtn ? selBtn.getAttribute('data-word') : null;
-    const opts = qEl.querySelectorAll('.option');
-    opts.forEach(b => {
+    qEl.querySelectorAll('.option').forEach(b => {
       const w = b.getAttribute('data-word');
       if (w === q.q.answer) b.classList.add('correct');
       else if (b.classList.contains('selected')) b.classList.add('wrong');
     });
+    ansEl.textContent = q.q.explanation;
     if (selectedWord && selectedWord === q.q.answer) score += q.points;
   });
-
   const total = sec1.length*2 + sec2.length*2 + oddQs.length*2;
-  $('#score').textContent = `Score: ${score} / ${total}`;
-  $('#score').classList.add('result');
+  const el = $('#score');
+  el.textContent = `Score: ${score} / ${total}`;
+  el.classList.add('result');
 }
 
-/* ---------------- wiring ---------------- */
-
+/* ---------- wiring ---------- */
 $('#closeDetail').addEventListener('click', () => detail.close());
 detail.addEventListener('click', (e) => { if (e.target === detail) detail.close(); });
-
 $('#search').addEventListener('input', applyFilters);
 $('#levelFilter').addEventListener('change', applyFilters);
 $('#catFilter').addEventListener('change', applyFilters);
-
 $('#modeBrowser').addEventListener('click', () => {
   $('#modeBrowser').classList.add('active');
   $('#modeTest').classList.remove('active');

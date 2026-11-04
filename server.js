@@ -5,6 +5,7 @@ const path = require('path');
 
 const PORT = process.env.PORT || 3000;
 const TARGET_URL = 'https://medterms.hku.hk/storage/mtlist.json';
+const VOCAB_URL = 'https://medterms.hku.hk/storage/vocab.json';
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
 const MIME = {
@@ -34,9 +35,8 @@ function serveStatic(req, res) {
   });
 }
 
-function proxyTerms(req, res) {
-  // Fetch the base64-encoded list from the original source (server-side, no CORS).
-  https.get(TARGET_URL, (upstream) => {
+function proxy(url, req, res) {
+  https.get(url, (upstream) => {
     let body = '';
     upstream.setEncoding('utf8');
     upstream.on('data', (chunk) => { body += chunk; });
@@ -44,22 +44,19 @@ function proxyTerms(req, res) {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
       res.setHeader('Cache-Control', 'public, max-age=3600');
-      // Pass through the raw base64 payload; the client decodes it.
       res.end(body);
     });
   }).on('error', (e) => {
     res.statusCode = 502;
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'Failed to fetch terminology list', detail: e.message }));
+    res.end(JSON.stringify({ error: 'Failed to fetch data', detail: e.message }));
   });
 }
 
 const server = http.createServer((req, res) => {
-  if (req.url.startsWith('/api/mtlist')) {
-    proxyTerms(req, res);
-  } else {
-    serveStatic(req, res);
-  }
+  if (req.url.startsWith('/api/mtlist')) proxy(TARGET_URL, req, res);
+  else if (req.url.startsWith('/api/vocab')) proxy(VOCAB_URL, req, res);
+  else serveStatic(req, res);
 });
 
 server.listen(PORT, () => {
