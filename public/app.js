@@ -281,6 +281,7 @@ $('#modeBrowser').addEventListener('click', () => {
   $('#browserView').hidden = false;
   $('#testView').hidden = true;
   $('#duoView').hidden = true;
+  $('#spacedView').hidden = true;
 });
 
 const showWodBtn = $('#showWodBtn');

@@ -214,5 +214,6 @@ $('#modeDuo').addEventListener('click', () => {
   $('#browserView').hidden = true;
   $('#testView').hidden = true;
   $('#duoView').hidden = false;
+  $('#spacedView').hidden = true;
   duoShowMenu();
 });

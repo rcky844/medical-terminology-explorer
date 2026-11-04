@@ -333,6 +333,7 @@ $('#modeTest').addEventListener('click', () => {
   $('#browserView').hidden = true;
   $('#testView').hidden = false;
   $('#duoView').hidden = true;
+  $('#spacedView').hidden = true;
   const intro2 = $('#testIntro'); if (intro2) intro2.hidden = false;
   const body2 = $('#testBody'); if (body2) body2.hidden = true;
 });
