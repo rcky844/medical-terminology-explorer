@@ -62,10 +62,11 @@ async function fetchBase64(url) {
 async function load() {
   try {
     status.textContent = 'Loading terminology list and word parts…';
-    const [termText, vocabText, wodText] = await Promise.all([
+    const [termText, vocabText, wodText, catText] = await Promise.all([
       fetchBase64('/api/mtlist'),
       fetchBase64('/api/vocab'),
-      fetchBase64('/api/wordofday')
+      fetchBase64('/api/wordofday'),
+      fetchBase64('/api/category')
     ]);
 
     const parseOrThrow = (text, label) => {
@@ -81,6 +82,9 @@ async function load() {
     state.terms = Array.isArray(data) ? data : [];
     state.vocab = parseOrThrow(vocabText, 'vocab.json');
     state.wodTerms = parseOrThrow(wodText, 'wordofday.json');
+    const cats = parseOrThrow(catText, 'category.json');
+    state.categories = {};
+    if (Array.isArray(cats)) cats.forEach(c => { state.categories[c.catId] = c.category; });
 
     status.hidden = true;
     grid.hidden = false;
@@ -256,7 +260,14 @@ function populateFilters() {
   const levelSel = $('#levelFilter');
   const catSel = $('#catFilter');
   levels.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = 'Level ' + l; levelSel.appendChild(o); });
-  cats.forEach(c => { const o = document.createElement('option'); o.value = c; const name = state.categories[c]; o.textContent = (name ? name + ' (' + c + ')' : 'Category ' + c); catSel.appendChild(o); });
+  cats.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c;
+    const name = state.categories[c] || ('Category ' + c);
+    const cnt = state.terms.filter(t => t.catId === c).length;
+    o.textContent = `${name} (${cnt})`;
+    catSel.appendChild(o);
+  });
 }
 
 function applyFilters() {
