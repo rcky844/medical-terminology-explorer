@@ -398,14 +398,30 @@ if (closeSettings) closeSettings.addEventListener('click', () => {
   const d = $('#settingsDialog'); if (d) d.close();
 });
 const exportDataBtn = $('#exportDataBtn');
-if (exportDataBtn) exportDataBtn.addEventListener('click', () => {
+if (exportDataBtn) exportDataBtn.addEventListener('click', async () => {
   const data = {};
   for (let i=0;i<localStorage.length;i++){
     const k = localStorage.key(i);
     try { data[k]=JSON.parse(localStorage.getItem(k)); }
     catch(e){ data[k]=localStorage.getItem(k); }
   }
-  const blob = new Blob([JSON.stringify(data,null,2)], { type:'application/json' });
+  const json = JSON.stringify(data,null,2);
+  const isNative = !!(window.Capacitor && (typeof window.Capacitor.isNativePlatform === 'function' ? window.Capacitor.isNativePlatform() : (window.Capacitor.getPlatform && window.Capacitor.getPlatform() !== 'web')));
+  if (isNative) {
+    try {
+      const FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
+      const Share = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share;
+      if (!FS) throw new Error('Filesystem plugin unavailable');
+      const result = await FS.writeFile({ path: 'mt-explorer-user-data.json', data: json, directory: 'DOCUMENTS', encoding: 'utf8' });
+      if (Share && result && result.uri) await Share.share({ title: 'MT Explorer data', url: result.uri, dialogTitle: 'Save/export data' });
+      const st = $('#settingsStatus'); if (st) st.textContent = 'Saved to Documents. Use Share sheet if prompted.';
+      return;
+    } catch (e) {
+      const st = $('#settingsStatus'); if (st) st.textContent = 'Native export failed: ' + e.message;
+      return;
+    }
+  }
+  const blob = new Blob([json], { type:'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = 'mt-explorer-user-data.json';

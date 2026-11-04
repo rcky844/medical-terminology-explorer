@@ -44,5 +44,9 @@
       "target": "AppImage"
     },
     "artifactName": "medical-terminology-explorer-full_v${version}.${ext}"
+  },
+  "dependencies": {
+    "@capacitor/filesystem": "^6.0.0",
+    "@capacitor/share": "^6.0.0"
   }
 }
