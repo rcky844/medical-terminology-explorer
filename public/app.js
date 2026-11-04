@@ -360,4 +360,52 @@ if (importDataBtn && importFile) {
   });
 }
 
+const generatePdfBtn = $('#generatePdfBtn');
+if (generatePdfBtn) generatePdfBtn.addEventListener('click', () => {
+  const checked = [...document.querySelectorAll('#settingsDialog input[type="checkbox"]:checked')].map(cb => cb.value);
+  let body = `<h1>Medical Terminology Explorer Report</h1><p>Generated ${new Date().toLocaleString()}</p>`;
+  if (checked.includes('test')) {
+    const sessions = JSON.parse(localStorage.getItem('mtTestSessions') || '[]');
+    body += '<h2>Practice Test</h2>';
+    if (!sessions.length) body += '<p>No saved sessions.</p>';
+    else sessions.forEach((sess, i) => {
+      body += `<h3>Session ${i+1} — ${new Date(sess.createdAt).toLocaleString()} — ${sess.score}/${sess.total}${sess.timeExpired ? ' (time expired)' : ''}</h3><ul>`;
+      (sess.items || []).forEach(it => {
+        body += `<li>${escapeHtml(it.prompt)} — your answer: ${escapeHtml(it.userAnswer || '(none)')} — correct: ${escapeHtml(it.correctAnswer)} ${it.awarded ? '✔' : '✘'}</li>`;
+      });
+      body += '</ul>';
+    });
+  }
+  if (checked.includes('spaced')) {
+    const sr = JSON.parse(localStorage.getItem('srData') || '{}');
+    const hist = JSON.parse(localStorage.getItem('srHistory') || '[]');
+    body += `<h2>Spaced Repetition</h2><p>Cards tracked: ${Object.keys(sr).length}</p><ul>`;
+    Object.entries(sr).forEach(([w,d]) => { body += `<li>${escapeHtml(w)} — box ${d.box}, next review ${new Date(d.next).toLocaleString()}</li>`; });
+    body += '</ul><h3>Review history (latest 50)</h3><ul>';
+    hist.slice(0,50).forEach(h => { body += `<li>${new Date(h.time).toLocaleString()} — ${escapeHtml(h.word)} — ${escapeHtml(h.rating)}</li>`; });
+    body += '</ul>';
+  }
+  if (checked.includes('wod')) {
+    const w = (typeof getWod === 'function') ? getWod() : null;
+    if (w) {
+      body += `<h2>Word of the Day</h2><p><strong>${escapeHtml(w.word)}</strong></p><div>${w.meaning_uk || ''}</div><p>Formation: ${escapeHtml(w.formation || '')}</p>`;
+    } else {
+      body += '<h2>Word of the Day</h2><p>Not available.</p>';
+    }
+  }
+  if (checked.includes('duo')) {
+    body += '<h2>Duolingo</h2>';
+    if (typeof duoState !== 'undefined') {
+      body += `<p>Score: ${duoState.score} • Streak: ${duoState.streak}</p>`;
+    } else {
+      body += '<p>No session data available.</p>';
+    }
+  }
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>MT Explorer Report</title><style>body{font-family:Arial,sans-serif;padding:20px;line-height:1.5} h1{color:#2563eb} h2{margin-top:1.5rem;border-bottom:1px solid #ccc;padding-bottom:.25rem} @media print{button{display:none}}</style></head><body>${body}<button onclick="window.print()">Print / Save as PDF</button></body></html>`;
+  const w = window.open('', '_blank');
+  if (!w) { alert('Popup blocked. Please allow popups for this site.'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+  setTimeout(() => w.print(), 600);
+});
+
 load();

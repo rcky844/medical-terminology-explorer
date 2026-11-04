@@ -95,10 +95,18 @@
   <dialog id="settingsDialog">
     <button id="closeSettings" class="close" aria-label="Close">×</button>
     <h2>Settings</h2>
-    <p>Export all locally stored progress (test sessions, spaced repetition data/history, and daily dismissal).</p>
+    <p>Export/import locally stored progress.</p>
     <button id="exportDataBtn" class="btn">Export user data (JSON)</button>
     <input id="importFile" type="file" accept="application/json" hidden />
     <button id="importDataBtn" class="btn secondary">Import user data (JSON)</button>
+    <div style="margin-top:1rem">
+      <h3>PDF report</h3>
+      <label><input type="checkbox" value="test" checked /> Practice Test sessions</label><br>
+      <label><input type="checkbox" value="spaced" checked /> Spaced repetition data/history</label><br>
+      <label><input type="checkbox" value="wod" /> Word of the Day info</label><br>
+      <label><input type="checkbox" value="duo" /> Duolingo current session</label><br>
+      <button id="generatePdfBtn" class="btn" style="margin-top:.5rem">Generate PDF report</button>
+    </div>
     <div id="settingsStatus" class="muted"></div>
   </dialog>
 
