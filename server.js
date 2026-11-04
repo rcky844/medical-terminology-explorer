@@ -7,6 +7,7 @@ const PORT = process.env.PORT || 3000;
 const TARGET_URL = 'https://medterms.hku.hk/storage/mtlist.json';
 const VOCAB_URL = 'https://medterms.hku.hk/storage/vocab.json';
 const WOD_URL = 'https://medterms.hku.hk/storage/wordofday.json';
+const CATEGORY_URL = 'https://medterms.hku.hk/storage/category.json';
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
 const MIME = {
@@ -58,9 +59,10 @@ const server = http.createServer((req, res) => {
   if (req.url.startsWith('/api/mtlist')) proxy(TARGET_URL, req, res);
   else if (req.url.startsWith('/api/vocab')) proxy(VOCAB_URL, req, res);
   else if (req.url.startsWith('/api/wordofday')) proxy(WOD_URL, req, res);
+  else if (req.url.startsWith('/api/category')) proxy(CATEGORY_URL, req, res);
   else serveStatic(req, res);
 });
 
 server.listen(PORT, () => {
-  console.log(`Medical Terminology Explorer running at http://localhost:${PORT}`);
+  console.log('Medical Terminology Explorer running at http://localhost:' + PORT);
 });

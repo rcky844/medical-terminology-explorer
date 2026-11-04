@@ -1,4 +1,4 @@
-const state = { terms: [], filtered: [], vocab: null, test: null, wodTerms: null };
+const state = { terms: [], filtered: [], vocab: null, categories: {}, test: null, wodTerms: null };
 let wodViewDate = new Date();
 function isToday(d){ const t=new Date(); return d.toDateString()===t.toDateString(); }
 function dayOfYearOf(d) { const s=new Date(d.getFullYear(),0,0); return Math.floor((d-s)/86400000); }
@@ -22,7 +22,8 @@ function decodeBase64(b64) {
 const SOURCE_MAP = {
   '/api/mtlist': 'https://medterms.hku.hk/storage/mtlist.json',
   '/api/vocab': 'https://medterms.hku.hk/storage/vocab.json',
-  '/api/wordofday': 'https://medterms.hku.hk/storage/wordofday.json'
+  '/api/wordofday': 'https://medterms.hku.hk/storage/wordofday.json',
+  '/api/category': 'https://medterms.hku.hk/storage/category.json'
 };
 
 async function fetchBase64(url) {
@@ -255,7 +256,7 @@ function populateFilters() {
   const levelSel = $('#levelFilter');
   const catSel = $('#catFilter');
   levels.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = 'Level ' + l; levelSel.appendChild(o); });
-  cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = 'Category ' + c; catSel.appendChild(o); });
+  cats.forEach(c => { const o = document.createElement('option'); o.value = c; const name = state.categories[c]; o.textContent = (name ? name + ' (' + c + ')' : 'Category ' + c); catSel.appendChild(o); });
 }
 
 function applyFilters() {
@@ -289,7 +290,7 @@ function renderGrid() {
       <div class="meaning">${escapeHtml(stripHtml(t.meaning_uk || t.meaning_us || ''))}</div>
       <div class="meta">
         ${t.level ? `<span class="tag">Level ${escapeHtml(t.level)}</span>` : ''}
-        ${t.catId ? `<span class="tag">Cat ${escapeHtml(t.catId)}</span>` : ''}
+        ${t.catId ? `<span class="tag">${escapeHtml(state.categories[t.catId] || ('Cat ' + t.catId))}</span>` : ''}
         ${t.syllableNo ? `<span class="tag">${escapeHtml(t.syllableNo)} syll.</span>` : ''}
       </div>`;
     card.addEventListener('click', () => openDetail(t));
@@ -317,7 +318,7 @@ function openDetail(t) {
     ${t.wordtype ? `<dt>Type</dt><dd>${escapeHtml(t.wordtype)}</dd>` : ''}
     ${t.syllableNo ? `<dt>Syllables</dt><dd>${escapeHtml(t.syllableNo)}</dd>` : ''}
     ${t.level ? `<dt>Level</dt><dd><span class="tag">Level ${escapeHtml(t.level)}</span></dd>` : ''}
-    ${t.catId ? `<dt>Category</dt><dd><span class="tag">Cat ${escapeHtml(t.catId)}</span></dd>` : ''}
+    ${t.catId ? `<dt>Category</dt><dd><span class="tag">${escapeHtml(state.categories[t.catId] || t.catId)}</span></dd>` : ''}
   </dl>`;
   html += `<div class="breakdown">
     ${t.prefix ? `<span class="chip chip-prefix">${escapeHtml(t.prefix)} <small>(prefix)</small></span>` : ''}
