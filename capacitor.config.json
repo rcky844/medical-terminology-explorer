@@ -1,0 +1,6 @@
+{
+  "appId": "com.example.medicalexplorer",
+  "appName": "Medical Terminology Explorer",
+  "webDir": "public",
+  "bundledWebRuntime": false
+}
