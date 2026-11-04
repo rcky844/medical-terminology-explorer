@@ -63,9 +63,21 @@ jobs:
       - run: npm install
       - run: npx cap add ios || true
       - run: npx cap sync ios
-      - name: Build iOS app
+      - name: Build iOS archive
         working-directory: ios/App
-        run: xcodebuild -workspace App.xcworkspace -scheme App -sdk iphonesimulator -configuration Debug build
+        run: xcodebuild -workspace App.xcworkspace -scheme App -sdk iphoneos -configuration Release -archivePath build/App.xcarchive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build archive
+      - name: Package IPA
+        working-directory: ios/App
+        run: |
+          rm -rf Payload
+          mkdir -p Payload
+          cp -R build/App.xcarchive/Products/Applications/*.app Payload/
+          zip -r App.ipa Payload
+      - name: Upload iOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: ios/App/App.ipa
 
 
   release:
