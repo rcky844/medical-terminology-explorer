@@ -26,11 +26,21 @@ async function fetchBase64(url) {
   const src = SOURCE_MAP[url] || url;
   let rawText = '';
 
-  const isTauri = !!(window.__TAURI__ && window.__TAURI__.core && typeof window.__TAURI__.core.invoke === 'function');
+  const isTauri = !!(
+    window.__TAURI__ &&
+    (
+      (window.__TAURI__.core && typeof window.__TAURI__.core.invoke === 'function') ||
+      (window.__TAURI__.tauri && typeof window.__TAURI__.tauri.invoke === 'function') ||
+      typeof window.__TAURI__.invoke === 'function'
+    )
+  );
   const isNative = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
 
   if (isTauri) {
-    rawText = await window.__TAURI__.core.invoke('fetch_text', { url: src });
+    const invokeFn = (window.__TAURI__.core && window.__TAURI__.core.invoke) ||
+    (window.__TAURI__.tauri && window.__TAURI__.tauri.invoke) ||
+    window.__TAURI__.invoke;
+    rawText = await invokeFn('fetch_text', { url: src });
   }
   else if (isNative) {
     const res = await fetch(src, {
