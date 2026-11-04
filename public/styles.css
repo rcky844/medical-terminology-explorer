@@ -144,3 +144,5 @@ dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(2px); }
 @media (max-width: 600px) {
   .wodbtn { font-size: .75rem; padding: .3rem .55rem; }
 }
+
+.spaceddecks { display: inline-flex; gap: .4rem; margin-right: .75rem; }

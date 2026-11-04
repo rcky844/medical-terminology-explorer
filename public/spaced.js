@@ -1,19 +1,35 @@
-const spacedState = { deck: [], index: 0, revealed: false, data: {}, history: [] };
+const spacedState = { deck: [], index: 0, revealed: false, data: {}, history: [], deckKind: 'terms' };
 
-function srLoad() {
-  try { return JSON.parse(localStorage.getItem('srData') || '{}'); } catch (e) { return {}; }
-}
-function srSave() {
-  localStorage.setItem('srData', JSON.stringify(spacedState.data));
+function srLoad() { try { return JSON.parse(localStorage.getItem('srData') || '{}'); } catch (e) { return {}; } }
+function srSave() { localStorage.setItem('srData', JSON.stringify(spacedState.data)); }
+
+function wordPartCards() {
+  const out = [];
+  const kinds = ['prefix','root','suffix'];
+  kinds.forEach(kind => {
+    (state.vocab?.[kind] || []).forEach(v => {
+      out.push({
+        key: `part:${kind}:${v.term}`,
+        word: v.term,
+        meaning_uk: `<p>${v.meaning_uk}</p>`,
+        audio: null,
+        image: null,
+        kind
+      });
+    });
+  });
+  return out;
 }
 
-function srDueTerms() {
+function spacedCandidates(kind) {
+  return kind === 'parts' ? wordPartCards() : state.terms.filter(t => t.word && t.meaning_uk);
+}
+
+function srDueTerms(kind) {
   const now = Date.now();
-  const due = [];
-  const fresh = [];
-  state.terms.forEach(t => {
-    if (!t.word || !t.meaning_uk) return;
-    const d = spacedState.data[t.word];
+  const due = [], fresh = [];
+  spacedCandidates(kind).forEach(t => {
+    const d = spacedState.data[t.key || t.word];
     if (d) {
       if (d.next <= now) due.push(t);
     } else {
@@ -23,12 +39,13 @@ function srDueTerms() {
   return { due, fresh };
 }
 
-function buildSpacedDeck() {
-  const { due, fresh } = srDueTerms();
+function buildSpacedDeck(kind) {
+  kind = kind || spacedState.deckKind;
+  spacedState.deckKind = kind;
+  const { due, fresh } = srDueTerms(kind);
   const deck = due.slice().sort(() => Math.random() - 0.5);
   const need = Math.max(0, 20 - deck.length);
-  const newCards = pick(fresh, need);
-  deck.push(...newCards);
+  deck.push(...pick(fresh, need));
   spacedState.deck = pick(deck, deck.length);
   spacedState.index = 0;
   spacedState.revealed = false;
@@ -37,10 +54,10 @@ function buildSpacedDeck() {
 function renderSpaced() {
   const area = $('#spacedArea');
   const stats = $('#spacedStats');
-  const total = Object.keys(spacedState.data).length;
-  const learned = Object.values(spacedState.data).filter(d=>d.box>=3).length;
-  const dueCount = srDueTerms().due.length;
-  if (stats) stats.textContent = `Cards: ${total} • Learned: ${learned} • Due: ${dueCount} • Deck: ${spacedState.deck.length}`;
+  const { due } = srDueTerms(spacedState.deckKind);
+  const learned = Object.keys(spacedState.data).filter(k => spacedState.data[k].box >= 3).length;
+  const tracked = Object.keys(spacedState.data).length;
+  if (stats) stats.textContent = `Deck: ${spacedState.deckKind} • Cards: ${tracked} • Learned: ${learned} • Due: ${due.length} • Session: ${spacedState.deck.length}`;
 
   if (!spacedState.deck.length) {
     area.innerHTML = '<div class="question"><p>No cards available.</p><button class="btn" id="srReload">Reload</button></div>';
@@ -53,14 +70,15 @@ function renderSpaced() {
     return;
   }
   const t = spacedState.deck[spacedState.index];
-  const audioUrl = t.sound_uk ? `https://medterms.hku.hk/storage/audio/mtlist/${encodeURIComponent(t.sound_uk)}` : null;
+  const key = t.key || t.word;
+  const audioUrl = t.sound_uk ? `https://medterms.hku.hk/storage/audio/mtlist/${encodeURIComponent(t.sound_uk)}` : (t.audio ? t.audio : null);
   area.innerHTML = `
     <div class="flashcard">
       <div class="flashfront">${escapeHtml(t.word)}</div>
       <div style="margin:.75rem 0"><button class="btn secondary" id="srReveal">${spacedState.revealed ? 'Hide' : 'Reveal'}</button></div>
       <div id="srBack" ${spacedState.revealed ? '' : 'hidden'}>
         <div class="meaning-full">${t.meaning_uk || ''}</div>
-        ${wordPartsBlock ? wordPartsBlock(t) : ''}
+        ${wordPartsBlock ? (typeof wordPartsBlock === 'function' ? wordPartsBlock(t) : '') : ''}
         ${audioUrl ? `<div class="media">${audioPlayer(audioUrl)}</div>` : ''}
         <div class="sr-buttons">
           <button class="srbtn again" data-rating="again">Again</button>
@@ -79,14 +97,14 @@ function renderSpaced() {
   area.querySelectorAll('.srbtn').forEach(btn => {
     btn.addEventListener('click', () => {
       const rating = btn.dataset.rating;
-      const d = spacedState.data[t.word] || { box: 0 };
-      if (rating === 'again') { d.box = 1; }
-      else if (rating === 'hard') { d.box = Math.max(1, d.box); }
-      else if (rating === 'good') { d.box = Math.min(6, (d.box || 0) + 1); }
-      else if (rating === 'easy') { d.box = Math.min(6, (d.box || 0) + 2); }
+      const d = spacedState.data[key] || { box: 0 };
+      if (rating === 'again') d.box = 1;
+      else if (rating === 'hard') d.box = Math.max(1, d.box || 0);
+      else if (rating === 'good') d.box = Math.min(6, (d.box || 0) + 1);
+      else if (rating === 'easy') d.box = Math.min(6, (d.box || 0) + 2);
       const interval = INTERVALS[d.box] || INTERVALS[1];
       d.next = Date.now() + interval;
-      spacedState.data[t.word] = d;
+      spacedState.data[key] = d;
       srSave();
       spacedState.history.unshift({ time: Date.now(), word: t.word, rating });
       try { localStorage.setItem('srHistory', JSON.stringify(spacedState.history.slice(0, 200))); } catch (e) {}
@@ -95,6 +113,19 @@ function renderSpaced() {
       renderSpaced();
     });
   });
+}
+
+function startSpaced() {
+  spacedState.data = srLoad();
+  try { spacedState.history = JSON.parse(localStorage.getItem('srHistory') || '[]'); } catch (e) { spacedState.history = []; }
+  const hb = $('#srHistoryBtn');
+  if (hb) hb.onclick = showSpacedHistory;
+  const termsBtn = $('#deckTerms');
+  if (termsBtn) termsBtn.onclick = () => { buildSpacedDeck('terms'); renderSpaced(); };
+  const partsBtn = $('#deckParts');
+  if (partsBtn) partsBtn.onclick = () => { buildSpacedDeck('parts'); renderSpaced(); };
+  buildSpacedDeck(spacedState.deckKind || 'terms');
+  renderSpaced();
 }
 
 function showSpacedHistory() {
@@ -110,26 +141,14 @@ function showSpacedHistory() {
   if (cb) cb.addEventListener('click', () => { if (!confirm('Clear spaced-repetition history?')) return; spacedState.history = []; localStorage.removeItem('srHistory'); showSpacedHistory(); });
 }
 
-function startSpaced() {
-  spacedState.data = srLoad();
-  try { spacedState.history = JSON.parse(localStorage.getItem('srHistory') || '[]'); } catch (e) { spacedState.history = []; }
-  const hb = $('#srHistoryBtn');
-  if (hb) hb.onclick = showSpacedHistory;
+spacedState.data = srLoad();
 try { spacedState.history = JSON.parse(localStorage.getItem('srHistory') || '[]'); } catch (e) { spacedState.history = []; }
-  buildSpacedDeck();
-  renderSpaced();
-}
-
 $('#modeSpaced').addEventListener('click', () => {
   document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
   $('#modeSpaced').classList.add('active');
   $('#browserView').hidden = true;
   $('#testView').hidden = true;
   $('#duoView').hidden = true;
-  $('#spacedView').hidden = true;
   $('#spacedView').hidden = false;
   startSpaced();
 });
-
-spacedState.data = srLoad();
-try { spacedState.history = JSON.parse(localStorage.getItem('srHistory') || '[]'); } catch (e) { spacedState.history = []; }
