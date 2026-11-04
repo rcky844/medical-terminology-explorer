@@ -493,4 +493,9 @@ document.addEventListener('click', (e) => {
   else { audio.pause(); btn.textContent = '▶ Play'; }
   audio.onended = () => { btn.textContent = '▶ Play'; };
 });
+const helpBtn = $('#helpBtn');
+if (helpBtn) helpBtn.addEventListener('click', () => { const d = $('#helpDialog'); if (d) d.showModal(); });
+const closeHelp = $('#closeHelp');
+if (closeHelp) closeHelp.addEventListener('click', () => { const d = $('#helpDialog'); if (d) d.close(); });
+
 load();
