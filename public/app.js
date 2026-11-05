@@ -763,23 +763,38 @@ if (nativeZoomGuard) {
 }
 
 /* Version display. Single source of truth is package.json:
-   - /api/version is served by the Node server (web + Electron), reading it
+   - /api/version is served by the Node server (web + Electron)
    - /version.json is an auto-generated copy bundled into native builds
-   If neither endpoint is reachable, fall back to a dev marker. */
+   - version-generated.js (also generated) defines window.MT_APP_VERSION at load
+   Native Capacitor builds must NOT rely on the fetches: /api/version does not
+   exist there, and CapacitorHttp (capacitor.config.json) intercepts relative
+   fetches so even /version.json is unreachable from the WebView — they read
+   window.MT_APP_VERSION instead. The generated script is also served as a
+   static file on the web, making it a good fallback after the endpoints. */
 const VERSION_ENDPOINTS = ['/api/version', '/version.json'];
+function setVersionEls(els, v) {
+  els.forEach(el => { if (el) el.textContent = v; });
+}
 async function updateAppVersion() {
   const els = ['appVersion', 'version'].map(id => document.getElementById(id));
+  if (isNativePlatform() && window.MT_APP_VERSION) {
+    setVersionEls(els, window.MT_APP_VERSION);
+    return;
+  }
   for (const u of VERSION_ENDPOINTS) {
     try {
       const res = await fetch(u);
       if (!res.ok) continue;
       const data = await res.json();
       if (data && (data.version || data.appVersion)) {
-        const v = data.version || data.appVersion;
-        els.forEach(el => { if (el) el.textContent = v; });
+        setVersionEls(els, data.version || data.appVersion);
         return;
       }
     } catch (e) {}
+  }
+  if (window.MT_APP_VERSION) {
+    setVersionEls(els, window.MT_APP_VERSION);
+    return;
   }
   els.forEach(el => { if (el && !el.textContent) el.textContent = 'Development'; });
 }
