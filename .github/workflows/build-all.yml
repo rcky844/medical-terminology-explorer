@@ -154,8 +154,8 @@ jobs:
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'v1.1.0' }}
-          name: ${{ github.ref_type == 'tag' && github.ref_name || 'v1.1.0' }}
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
           files: |
             release-assets/**/*.AppImage
             release-assets/**/*.dmg
