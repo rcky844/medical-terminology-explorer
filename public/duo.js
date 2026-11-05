@@ -46,6 +46,7 @@ function buildDuoQuestions(kind, n=8) {
         const si = (typeof stressIndex === 'function') ? stressIndex(t) : null;
         if (!si) continue;
         const target = si.idx + 1;
+        if (target < 1) continue;
         const total = si.chunks;
         const offset = Math.floor(Math.random() * 3);
         let st = Math.max(1, target - 2 + offset);
@@ -55,7 +56,7 @@ function buildDuoQuestions(kind, n=8) {
         qs.push({ kind: 'guessing', sub: 'stress', term: t, answer: String(target), options: shuffle(opts), range: total });
       } else {
         const target = Number(t.syllableNo);
-        if (!Number.isFinite(target)) continue;
+        if (!Number.isFinite(target) || target < 1) continue;
         const offset = Math.floor(Math.random() * 3);
         let start = Math.max(1, target - 2 + offset);
         const opts = [];
