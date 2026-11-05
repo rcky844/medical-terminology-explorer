@@ -163,3 +163,11 @@ dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(2px); }
 #spacedHistory { max-height: calc(80vh - 2.5rem); overflow-y: auto; }
 #sessionsDialog { max-height: 80vh; overflow: visible; }
 #sessionsPanel { max-height: calc(80vh - 2.5rem); overflow-y: auto; }
+
+.wlgrid { display: grid; gap: .25rem; justify-content: center; margin: .5rem 0; }
+.wlrow { display: flex; gap: .25rem; justify-content: center; }
+.wltile { width: 2.4rem; height: 2.4rem; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; border: 1px solid var(--border); border-radius: .35rem; background: var(--panel); text-transform: uppercase; }
+.wltile.correct { background: #16a34a; color: #fff; border-color: #16a34a; }
+.wltile.present { background: #ca8a04; color: #fff; border-color: #ca8a04; }
+.wltile.absent { background: #374151; color: #cbd5e1; border-color: #374151; }
+.wltile.empty { background: transparent; }

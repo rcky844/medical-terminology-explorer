@@ -11,6 +11,7 @@ function duoShowMenu() {
       <button class="duocard" data-kind="finding"><h3>Finding</h3><p>Find the correct word/meaning</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="guessing"><h3>Guessing</h3><p>Guess the stressed part or number of syllables</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="forming"><h3>Forming</h3><p>Form the word from its roots</p><span class="tag">+10 pts</span></button>
+      <button class="duocard" data-kind="wordle"><h3>Wordle</h3><p>Guess the hidden word</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="spelling"><h3>Spelling</h3><p>Listen and fill the answer</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="matching"><h3>Matching</h3><p>Match the meaning of a thematic group</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="mixed"><h3>Mixed</h3><p>All types combined</p><span class="tag">+10 pts</span></button>
@@ -27,7 +28,7 @@ function updateDuoStats() {
 function buildDuoQuestions(kind, n=8) {
   const terms = state.terms.filter(t => t.word && (t.meaning_uk || t.meaning_us));
   const qs = [];
-  const kinds = kind === 'mixed' ? ['choosing','finding','guessing','forming','spelling'] : [kind];
+  const kinds = kind === 'mixed' ? ['choosing','finding','guessing','forming','wordle','spelling'] : [kind];
   let guard = 0;
   while (qs.length < n && guard++ < n*80) {
     const k = kinds[Math.floor(Math.random()*kinds.length)];
@@ -35,6 +36,11 @@ function buildDuoQuestions(kind, n=8) {
       const t = terms[Math.floor(Math.random()*terms.length)];
       if (!t.sound_uk) continue;
       qs.push({ kind:'spelling', term: t });
+    } else if (k === 'wordle') {
+      const candidates = terms.filter(t => /^[a-zA-Z]{4,7}$/.test(t.word || ''));
+      if (!candidates.length) continue;
+      const t = candidates[Math.floor(Math.random()*candidates.length)];
+      qs.push({ kind: 'wordle', term: t, answer: String(t.word).toLowerCase(), guesses: [] });
     } else if (k === 'finding') {
       const t = terms[Math.floor(Math.random()*terms.length)];
       const opts = pick(terms,4); if (!opts.includes(t)) opts[0] = t;
@@ -156,6 +162,9 @@ function renderDuoQuestion() {
     area.querySelectorAll('.duo-opt').forEach(b => b.addEventListener('click', () => answerChoosing(b, q)));
   } else if (q.kind === 'matching') {
     renderMatching();
+  } else if (q.kind === 'wordle') {
+    renderWordle();
+    return;
   } else if (q.kind === 'spelling') {
     const url = q.term.sound_uk ? `https://medterms.hku.hk/storage/audio/mtlist/${encodeURIComponent(q.term.sound_uk)}` : null;
     area.innerHTML = `<div class="question">
@@ -270,6 +279,71 @@ function checkForming() {
   }
   updateDuoStats();
   setTimeout(() => { duoState.qi += 1; renderDuoQuestion(); }, 1200);
+}
+
+function wordleColors(guess, answer) {
+  const res = Array(guess.length).fill('absent');
+  const counts = {};
+  for (let i=0;i<answer.length;i++) counts[answer[i]] = (counts[answer[i]] || 0) + 1;
+  for (let i=0;i<guess.length;i++) {
+    if (guess[i] === answer[i]) { res[i] = 'correct'; counts[guess[i]]--; }
+  }
+  for (let i=0;i<guess.length;i++) {
+    if (res[i] === 'correct') continue;
+    if (counts[guess[i]] > 0) { res[i] = 'present'; counts[guess[i]]--; }
+  }
+  return res;
+}
+function renderWordle() {
+  const q = duoState.current;
+  const area = $('#duoArea');
+  const total = 6;
+  const rows = [];
+  for (let r=0;r<total;r++) {
+    const guess = q.guesses[r];
+    if (guess) {
+      const colors = wordleColors(guess, q.answer);
+      rows.push('<div class="wlrow">' + guess.split('').map((ch,i) => `<span class="wltile ${colors[i]}">${escapeHtml(ch.toUpperCase())}</span>`).join('') + '</div>');
+    } else if (r === q.guesses.length) {
+      rows.push('<div class="wlrow">' + Array(q.answer.length).fill('<span class="wltile empty"> </span>').join('') + '</div>');
+    } else {
+      rows.push('<div class="wlrow">' + Array(q.answer.length).fill('<span class="wltile"> </span>').join('') + '</div>');
+    }
+  }
+  const done = q.guesses.length >= total || q.guesses.includes(q.answer);
+  area.innerHTML = `<div class="question">
+    <h3>Wordle: guess the word</h3>
+    <p class="muted">Length: ${q.answer.length} • Attempts: ${q.guesses.length}/${total}</p>
+    <div class="wlgrid">${rows.join('')}</div>
+    ${done ? '' : `<div style="margin:.5rem 0;display:flex;gap:.5rem;justify-content:center">
+      <input id="duoWordleInput" type="text" maxlength="${q.answer.length}" placeholder="Type guess (${q.answer.length} letters)" style="text-transform:uppercase" />
+      <button class="btn" id="duoWordleBtn">Guess</button>
+    </div>`}
+    <div class="answer hidden" id="duoAns"></div>
+  </div>`;
+  if (!done) {
+    const btn = $('#duoWordleBtn');
+    const inp = $('#duoWordleInput');
+    const submit = () => {
+      const val = (inp?.value || '').trim().toLowerCase();
+      if (val.length !== q.answer.length || !/^[a-z]+$/.test(val)) { if (inp) inp.focus(); return; }
+      q.guesses.push(val);
+      if (val === q.answer || q.guesses.length >= total) {
+        const correct = q.guesses.includes(q.answer);
+        if (correct) { duoState.score += 10; duoState.streak += 1; if (duoState.streak % 5 === 0) launchConfetti(); }
+        else { duoState.streak = 0; }
+        renderWordle();
+        const a2 = $('#duoAns');
+        if (a2) { a2.classList.remove('hidden'); a2.innerHTML = correct ? 'Correct! +10' : `Answer: ${escapeHtml(q.answer.toUpperCase())}`; }
+        updateDuoStats();
+        setTimeout(() => { duoState.qi += 1; renderDuoQuestion(); }, 1400);
+      } else {
+        renderWordle();
+      }
+    };
+    if (btn) btn.addEventListener('click', submit);
+    if (inp) inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  }
 }
 
 function finishDuoAnswer(correct, answerText) {
