@@ -43,15 +43,13 @@ function buildDuoQuestions(kind, n=8) {
       const t = terms[Math.floor(Math.random()*terms.length)];
       const target = Number(t.syllableNo);
       if (!Number.isFinite(target)) continue;
-      const counts = [...new Set(terms.map(x => Number(x.syllableNo)).filter(n => Number.isFinite(n)))];
-      const others = counts.filter(n => n !== target);
-      const distr = pick(others, 3);
-      while (distr.length < 3) {
-        const r = Math.floor(Math.random() * 6) + 1;
-        if (r !== target && !distr.includes(r)) distr.push(r);
-      }
-      const opts = shuffle([target, ...distr].map(String));
-      qs.push({ kind: 'guessing', term: t, answer: String(target), options: opts });
+      const offset = Math.floor(Math.random() * 3); // 0,1,2 -> start target-2,-1,0
+      let start = Math.max(1, target - 2 + offset);
+      const opts = [];
+      for (let i = 0; i < 4; i++) opts.push(String(start + i));
+      // ensure the correct answer is included
+      if (!opts.includes(String(target))) opts[Math.floor(Math.random()*opts.length)] = String(target);
+      qs.push({ kind: 'guessing', term: t, answer: String(target), options: shuffle(opts) });
     } else if (k === 'choosing') {
       const t = terms[Math.floor(Math.random()*terms.length)];
       const types = ['prefix','root','suffix'].filter(x => t[x]);
