@@ -8,7 +8,7 @@ function duoShowMenu() {
   menu.innerHTML = `
     <div class="duocards">
       <button class="duocard" data-kind="choosing"><h3>Choosing</h3><p>Find the correct suffix / root / prefix</p><span class="tag">+10 pts</span></button>
-      <button class="duocard" data-kind="finding"><h3>Finding</h3><p>Find the correct meaning</p><span class="tag">+10 pts</span></button>
+      <button class="duocard" data-kind="finding"><h3>Finding</h3><p>Find the correct word/meaning</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="spelling"><h3>Spelling</h3><p>Listen and fill the answer</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="matching"><h3>Matching</h3><p>Match the meaning of a thematic group</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="mixed"><h3>Mixed</h3><p>All types combined</p><span class="tag">+10 pts</span></button>
@@ -36,7 +36,8 @@ function buildDuoQuestions(kind, n=8) {
     } else if (k === 'finding') {
       const t = terms[Math.floor(Math.random()*terms.length)];
       const opts = pick(terms,4); if (!opts.includes(t)) opts[0] = t;
-      qs.push({ kind:'finding', term: t, options: shuffle(opts) });
+      const reverse = Math.random() < 0.5;
+      qs.push({ kind:'finding', term: t, options: shuffle(opts), reverse });
     } else if (k === 'choosing') {
       const t = terms[Math.floor(Math.random()*terms.length)];
       const types = ['prefix','root','suffix'].filter(x => t[x]);
@@ -75,13 +76,23 @@ function renderDuoQuestion() {
   const q = duoState.questions[duoState.qi];
   duoState.current = q;
   if (q.kind === 'finding') {
-    const opts = q.options.map(t => `<button class="option duo-opt" data-word="${escapeHtml(t.word)}">${escapeHtml(stripHtml(t.meaning_uk||t.meaning_us||''))}</button>`).join('');
-    area.innerHTML = `<div class="question">
-      <h3>Finding: correct meaning</h3>
-      <div class="prompt">Term: <strong>${escapeHtml(q.term.word)}</strong></div>
-      <div class="options">${opts}</div>
-      <div class="answer hidden" id="duoAns"></div>
-    </div>`;
+    if (q.reverse) {
+      const opts = q.options.map(t => `<button class="option duo-opt" data-word="${escapeHtml(t.word)}">${escapeHtml(t.word)}</button>`).join('');
+      area.innerHTML = `<div class="question">
+        <h3>Finding: correct word</h3>
+        <div class="prompt">Meaning: <strong>${escapeHtml(stripHtml(q.term.meaning_uk||q.term.meaning_us||''))}</strong></div>
+        <div class="options">${opts}</div>
+        <div class="answer hidden" id="duoAns"></div>
+      </div>`;
+    } else {
+      const opts = q.options.map(t => `<button class="option duo-opt" data-word="${escapeHtml(t.word)}">${escapeHtml(stripHtml(t.meaning_uk||t.meaning_us||''))}</button>`).join('');
+      area.innerHTML = `<div class="question">
+        <h3>Finding: correct meaning</h3>
+        <div class="prompt">Term: <strong>${escapeHtml(q.term.word)}</strong></div>
+        <div class="options">${opts}</div>
+        <div class="answer hidden" id="duoAns"></div>
+      </div>`;
+    }
     area.querySelectorAll('.duo-opt').forEach(b => b.addEventListener('click', () => answerFinding(b, q.term.word)));
   } else if (q.kind === 'choosing') {
     const label = q.partKind;
