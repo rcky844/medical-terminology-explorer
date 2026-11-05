@@ -9,7 +9,7 @@ function duoShowMenu() {
     <div class="duocards">
       <button class="duocard" data-kind="choosing"><h3>Choosing</h3><p>Find the correct suffix / root / prefix</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="finding"><h3>Finding</h3><p>Find the correct word/meaning</p><span class="tag">+10 pts</span></button>
-      <button class="duocard" data-kind="guessing"><h3>Guessing</h3><p>Guess the number of syllables</p><span class="tag">+10 pts</span></button>
+      <button class="duocard" data-kind="guessing"><h3>Guessing</h3><p>Guess the stressed part and number of syllables</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="spelling"><h3>Spelling</h3><p>Listen and fill the answer</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="matching"><h3>Matching</h3><p>Match the meaning of a thematic group</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="mixed"><h3>Mixed</h3><p>All types combined</p><span class="tag">+10 pts</span></button>
@@ -41,15 +41,20 @@ function buildDuoQuestions(kind, n=8) {
       qs.push({ kind:'finding', term: t, options: shuffle(opts), reverse });
     } else if (k === 'guessing') {
       const t = terms[Math.floor(Math.random()*terms.length)];
-      const target = Number(t.syllableNo);
-      if (!Number.isFinite(target)) continue;
-      const offset = Math.floor(Math.random() * 3); // 0,1,2 -> start target-2,-1,0
-      let start = Math.max(1, target - 2 + offset);
-      const opts = [];
-      for (let i = 0; i < 4; i++) opts.push(String(start + i));
-      // ensure the correct answer is included
-      if (!opts.includes(String(target))) opts[Math.floor(Math.random()*opts.length)] = String(target);
-      qs.push({ kind: 'guessing', term: t, answer: String(target), options: shuffle(opts) });
+      const si = (typeof stressIndex === 'function') ? stressIndex(t) : null;
+      if (!si) continue;
+      const correct = (si.idx + 1) + ' of ' + si.chunks;
+      const opts = new Set([correct]);
+      let guard = 0;
+      while (opts.size < 4 && guard++ < 50) {
+        const stressed = Math.max(1, Math.min(si.chunks, si.idx + 1 + (Math.floor(Math.random()*3) - 1)));
+        const total = Math.max(1, si.chunks + (Math.random() < 0.5 ? -1 : 1) * (Math.floor(Math.random()*2)));
+        const cand = stressed + ' of ' + total;
+        if (cand !== correct) opts.add(cand);
+      }
+      // pad if needed
+      while (opts.size < 4) opts.add((opts.size + 1) + ' of ' + si.chunks);
+      qs.push({ kind: 'guessing', term: t, answer: correct, options: shuffle([...opts]) });
     } else if (k === 'choosing') {
       const t = terms[Math.floor(Math.random()*terms.length)];
       const types = ['prefix','root','suffix'].filter(x => t[x]);
@@ -109,7 +114,7 @@ function renderDuoQuestion() {
   } else if (q.kind === 'guessing') {
     const opts = q.options.map(v => `<button class="option duo-opt" data-val="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('');
     area.innerHTML = `<div class="question">
-      <h3>Guessing: number of syllables</h3>
+      <h3>Guessing: stressed part & syllables</h3>
       <div class="prompt">Term: <strong>${escapeHtml(q.term.word)}</strong></div>
       <div class="options">${opts}</div>
       <div class="answer hidden" id="duoAns"></div>
