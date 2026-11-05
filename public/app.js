@@ -2,7 +2,32 @@ const APP_VERSION = '1.2.0';
 const state = { terms: [], filtered: [], vocab: null, categories: {}, test: null, wodTerms: null };
 let wodViewDate = new Date();
 function isToday(d){ const t=new Date(); return d.toDateString()===t.toDateString(); }
-function dayOfYearOf(d) { const s=new Date(d.getFullYear(),0,0); return Math.floor((d-s)/86400000); }
+/* DST-safe day-of-year (1-based; Jan 1 -> 1). Computing the raw millisecond
+   difference between local midnights drifts by one day around DST changes. */
+function dayOfYearOf(d) {
+  const start = Date.UTC(d.getFullYear(), 0, 0);
+  const cur = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  return Math.round((cur - start) / 86400000);
+}
+/* Local-time YYYY-MM-DD. toISOString() is UTC-based and can show the previous
+   day when viewing local dates in a time zone ahead of UTC. */
+function toLocalISODate(d) {
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+/* Single shared check (previously duplicated inline in several files). */
+function isNativePlatform() {
+  const cap = window.Capacitor;
+  if (!cap) return false;
+  if (typeof cap.isNativePlatform === 'function') return !!cap.isNativePlatform();
+  return !!(cap.getPlatform && cap.getPlatform() !== 'web');
+}
+/* Uniform asset URL builders for the HKU media storage. */
+function assetUrl(kind, name) {
+  return name ? `https://medterms.hku.hk/storage/${kind}/${encodeURIComponent(name)}` : null;
+}
+const mtlistAudioUrl = (name) => assetUrl('audio/mtlist', name);
+const wodAudioUrl    = (name) => assetUrl('audio/wordofday', name);
+const imageAssetUrl  = (name) => assetUrl('image', name);
 
 const $ = (sel) => document.querySelector(sel);
 const grid = $('#grid');
@@ -13,11 +38,15 @@ const detailBody = $('#detailBody');
 
 function stripHtml(s){ return (s || '').replace(/<[^>]*>/g, ''); }
 
-function decodeBase64(b64) {
+function base64ToBytes(b64) {
   const bin = atob(b64.trim());
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return new TextDecoder('utf-8').decode(bytes);
+  return bytes;
+}
+
+function decodeBase64(b64) {
+  return new TextDecoder('utf-8').decode(base64ToBytes(b64));
 }
 
 const SOURCE_MAP = {
@@ -29,11 +58,9 @@ const SOURCE_MAP = {
 
 async function fetchBase64(url) {
   const src = SOURCE_MAP[url] || url;
-  let rawText = '';
+  let rawText;
 
-  const isNative = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
-
-  if (isNative) {
+  if (isNativePlatform()) {
     const res = await fetch(src, {
       headers: {
         'Accept': 'application/json, text/plain, */*'
@@ -72,13 +99,13 @@ async function load() {
       wodText = cachedAssets.wod;
       catText = cachedAssets.category;
     } else {
-      const res = await Promise.all([
+      const [mt, vb, wd, ct] = await Promise.all([
         fetchBase64('/api/mtlist'),
         fetchBase64('/api/vocab'),
         fetchBase64('/api/wordofday'),
         fetchBase64('/api/category')
       ]);
-      termText = res[0]; vocabText = res[1]; wodText = res[2]; catText = res[3];
+      [termText, vocabText, wodText, catText] = [mt, vb, wd, ct];
       if (offlineEnabled) {
         localStorage.setItem('offlineAssets', JSON.stringify({ mtlist: termText, vocab: vocabText, wod: wodText, category: catText }));
       }
@@ -94,7 +121,13 @@ async function load() {
     };
 
     const data = parseOrThrow(termText, 'mtlist.json');
-    state.terms = Array.isArray(data) ? data : [];
+    // Precompute the lowercase search haystack once; rebuilding it per term on
+    // every keystroke in applyFilters() is the expensive part of searching.
+    state.terms = (Array.isArray(data) ? data : []).map(t => {
+      t._hay = [t.word, t.meaning_uk, t.meaning_us, t.prefix, t.root, t.suffix, t.wordtype, t.catId]
+        .filter(Boolean).join(' ').toLowerCase();
+      return t;
+    });
     state.vocab = parseOrThrow(vocabText, 'vocab.json');
     state.wodTerms = parseOrThrow(wodText, 'wordofday.json');
     const cats = parseOrThrow(catText, 'category.json');
@@ -117,8 +150,13 @@ async function load() {
 function canon(s) { return (s || '').toLowerCase().replace(/[^a-z]/g, ''); }
 function baseToken(t) { return (t || '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z]/g, '').replace(/o$/, ''); }
 
+/* Memoized: the same (kind, part) pair is matched again in every card detail,
+   WOD render and spaced-repetition card. */
+const vocabMatchCache = new Map();
 function vocabMatches(kind, partString) {
   if (!partString || !state.vocab) return [];
+  const key = kind + '|' + String(partString).toLowerCase();
+  if (vocabMatchCache.has(key)) return vocabMatchCache.get(key);
   const list = state.vocab[kind] || [];
   const segments = String(partString).split(/[^A-Za-z]+/).filter(Boolean)
     .map(canon).filter(Boolean);
@@ -140,6 +178,7 @@ function vocabMatches(kind, partString) {
     }
     if (ok) found.push(v);
   }
+  vocabMatchCache.set(key, found);
   return found;
 }
 
@@ -158,6 +197,15 @@ function wordPartsBlock(t) {
   return `<div class="wordparts"><h3>Word parts</h3><dl class="info-grid">${rows.join('')}</dl></div>`;
 }
 
+/* Duplicated in renderWod() and openDetail() — shared here. */
+function chipsBlock(t) {
+  return `<div class="breakdown">
+    ${t.prefix ? `<span class="chip chip-prefix">${escapeHtml(t.prefix)} <small>(prefix)</small></span>` : ''}
+    ${t.root ? `<span class="chip chip-root">${escapeHtml(t.root)} <small>(root)</small></span>` : ''}
+    ${t.suffix ? `<span class="chip chip-suffix">${escapeHtml(t.suffix)} <small>(suffix)</small></span>` : ''}
+  </div>`;
+}
+
 function wordPartsSummary(t) {
   const bits = [];
   for (const [label, kind, value] of [['prefix','prefix',t.prefix],['root','root',t.root],['suffix','suffix',t.suffix]]) {
@@ -169,18 +217,12 @@ function wordPartsSummary(t) {
 }
 
 
-function dayOfYear() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 0);
-  return Math.floor((now - start) / 86400000);
-}
 function getWod() {
   const arr = state.wodTerms || [];
   if (!arr.length) return null;
+  // Day-of-year (1-based) mapped onto the list.
   const n = Math.max(1, dayOfYearOf(wodViewDate));
-  const t = arr.length;
-  const idx = t >= 365 ? (t % n) : (n % t);
-  return arr[Number.isFinite(idx) ? idx : 0] || arr[0];
+  return arr[n % arr.length] || arr[0];
 }
 function renderWod() {
   const t = getWod();
@@ -197,16 +239,15 @@ function renderWod() {
   const rb = $('#showWodBtn');
   if (rb) rb.hidden = true;
 
-  const audioUrl = t.sound_uk ? `https://medterms.hku.hk/storage/audio/mtlist/${encodeURIComponent(t.sound_uk)}` : null;
-  const wodAudioUrl = t.wodSound ? `https://medterms.hku.hk/storage/audio/wordofday/${encodeURIComponent(t.wodSound)}` : null;
-  const wodDate = new Date(wodViewDate);
-  const imgUrl = t.image ? `https://medterms.hku.hk/storage/image/${encodeURIComponent(t.image)}` : null;
+  const audioUrl = mtlistAudioUrl(t.sound_uk);
+  const wodAudioSrc = wodAudioUrl(t.wodSound);
+  const imgUrl = imageAssetUrl(t.image);
   sec.innerHTML = `
     <div class="wodcard">
       <div class="wodhead">
         <h2>Word of the Day</h2>
         <div class="wodactions">
-          <input type="date" id="wodDatePicker" class="wodbtn" value="${wodDate.toISOString().slice(0,10)}" />
+          <input type="date" id="wodDatePicker" class="wodbtn" value="${toLocalISODate(wodViewDate)}" />
           <button class="wodbtn" id="wodPrev">◀ Prev</button>
           <button class="wodbtn" id="wodNext"${isToday(wodViewDate)?' disabled':''}>Next ▶</button>
           <button class="wodbtn" id="wodToday"${isToday(wodViewDate)?' disabled':''}>Today</button>
@@ -214,23 +255,19 @@ function renderWod() {
           <button class="wodbtn" id="wodDismiss">Dismiss today</button>
         </div>
       </div>
-      <div class="muted" style="margin-bottom:.5rem">${wodDate.toDateString()}</div>
+      <div class="muted" style="margin-bottom:.5rem">${wodViewDate.toDateString()}</div>
       <div id="wodContent">
         <div class="wodtitle">${escapeHtml(t.word)}</div>
         ${t.wordStress_uk ? `<div class="stress">${t.wordStress_uk}</div>` : ''}
         ${wordPartsBlock(t)}
         <div class="meaning-full">${t.meaning_uk || ''}</div>
-        <div class="breakdown" style="margin-top:.5rem">
-          ${t.prefix ? `<span class="chip chip-prefix">${escapeHtml(t.prefix)} <small>(prefix)</small></span>` : ''}
-          ${t.root ? `<span class="chip chip-root">${escapeHtml(t.root)} <small>(root)</small></span>` : ''}
-          ${t.suffix ? `<span class="chip chip-suffix">${escapeHtml(t.suffix)} <small>(suffix)</small></span>` : ''}
-        </div>
+        ${chipsBlock(t)}
         ${t.formation ? `<div><strong>Formation:</strong> ${escapeHtml(t.formation)}</div>` : ''}
         ${t.itemNoOnRevisedList ? `<div><strong>Item number on revised list:</strong> ${escapeHtml(t.itemNoOnRevisedList)}</div>` : ''}
         ${t.sentence ? `<div style="margin-top:.5rem"><strong>Sentence example:</strong><div>${t.sentence}</div></div>` : ''}
         <div class="media">
           ${audioUrl ? `<div><div class="muted" style="margin-bottom:.25rem">Pronunciation</div>${audioPlayer(audioUrl)}</div>` : ''}
-          ${wodAudioUrl ? `<div><div class="muted" style="margin-bottom:.25rem">Explanation (definition + example)</div>${audioPlayer(wodAudioUrl)}</div>` : ''}
+          ${wodAudioSrc ? `<div><div class="muted" style="margin-bottom:.25rem">Explanation (definition + example)</div>${audioPlayer(wodAudioSrc)}</div>` : ''}
           ${imgUrl ? `<img src="${imgUrl}" alt="${escapeHtml(t.word)}" loading="lazy" />` : ''}
         </div>
       </div>
@@ -269,17 +306,22 @@ function renderWod() {
 
 /* ---------- browse ---------- */
 function populateFilters() {
-  const levels = [...new Set(state.terms.map(t => t.level).filter(Boolean))].sort();
-  const cats = [...new Set(state.terms.map(t => t.catId).filter(Boolean))].sort((a,b)=>+a-+b);
   const levelSel = $('#levelFilter');
   const catSel = $('#catFilter');
-  levels.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = 'Level ' + l; levelSel.appendChild(o); });
-  cats.forEach(c => {
+  const levels = new Set();
+  const catCounts = new Map();
+  for (const t of state.terms) {
+    if (t.level) levels.add(t.level);
+    if (!t.catId) continue;
+    // Single pass instead of one filter() per category (was O(n^2)).
+    catCounts.set(t.catId, (catCounts.get(t.catId) || 0) + 1);
+  }
+  [...levels].sort().forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = 'Level ' + l; levelSel.appendChild(o); });
+  [...catCounts.keys()].sort((a,b)=>+a-+b).forEach(c => {
     const o = document.createElement('option');
     o.value = c;
     const name = state.categories[c] || ('Category ' + c);
-    const cnt = state.terms.filter(t => t.catId === c).length;
-    o.textContent = `${name} (${cnt})`;
+    o.textContent = `${name} (${catCounts.get(c)})`;
     catSel.appendChild(o);
   });
 }
@@ -291,10 +333,8 @@ function applyFilters() {
   state.filtered = state.terms.filter(t => {
     if (level && t.level !== level) return false;
     if (cat && t.catId !== cat) return false;
-    if (!q) return true;
-    const hay = [t.word, t.meaning_uk, t.meaning_us, t.prefix, t.root, t.suffix, t.wordtype, t.catId]
-      .filter(Boolean).join(' ').toLowerCase();
-    return hay.includes(q);
+    // t._hay (lowercase search text) is precomputed once in load().
+    return !q || (t._hay || '').includes(q);
   });
   renderGrid();
 }
@@ -331,10 +371,8 @@ function escapeHtml(s) {
 function openDetail(t) {
   const wordStress = t.wordStress_uk || t.wordStress_us || '';
   const meaning = t.meaning_uk || t.meaning_us || '';
-  const audioName = t.sound_uk || t.sound_us;
-  const audioUrl = audioName ? `https://medterms.hku.hk/storage/audio/mtlist/${encodeURIComponent(audioName)}` : null;
-  const wodDate = new Date(wodViewDate);
-  const imgUrl = t.image ? `https://medterms.hku.hk/storage/image/${encodeURIComponent(t.image)}` : null;
+  const audioUrl = mtlistAudioUrl(t.sound_uk || t.sound_us);
+  const imgUrl = imageAssetUrl(t.image);
 
   let html = `<h2 class="detail-title">${escapeHtml(t.word)}</h2>`;
   if (wordStress) html += `<div class="stress">${wordStress}</div>`;
@@ -345,11 +383,7 @@ function openDetail(t) {
     ${t.level ? `<dt>Level</dt><dd><span class="tag">Level ${escapeHtml(t.level)}</span></dd>` : ''}
     ${t.catId ? `<dt>Category</dt><dd><span class="tag">${escapeHtml(state.categories[t.catId] || t.catId)}</span></dd>` : ''}
   </dl>`;
-  html += `<div class="breakdown">
-    ${t.prefix ? `<span class="chip chip-prefix">${escapeHtml(t.prefix)} <small>(prefix)</small></span>` : ''}
-    ${t.root ? `<span class="chip chip-root">${escapeHtml(t.root)} <small>(root)</small></span>` : ''}
-    ${t.suffix ? `<span class="chip chip-suffix">${escapeHtml(t.suffix)} <small>(suffix)</small></span>` : ''}
-  </div>`;
+  html += chipsBlock(t);
   html += wordPartsBlock(t);
   html += '<div class="media">';
   if (audioUrl) html += audioPlayer(audioUrl);
@@ -420,7 +454,7 @@ if (exportDataBtn) exportDataBtn.addEventListener('click', async () => {
     catch(e){ data[k]=localStorage.getItem(k); }
   }
   const json = JSON.stringify(data,null,2);
-  const isNative = !!(window.Capacitor && (typeof window.Capacitor.isNativePlatform === 'function' ? window.Capacitor.isNativePlatform() : (window.Capacitor.getPlatform && window.Capacitor.getPlatform() !== 'web')));
+  const isNative = isNativePlatform();
   if (isNative) {
     try {
       const FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
@@ -542,9 +576,8 @@ if (closeHelp) closeHelp.addEventListener('click', () => { const d = $('#helpDia
 
 /* Offline assets */
 const offlineModeCheckbox = $('#offlineMode');
-const isNativePlatform = !!(window.Capacitor && (typeof window.Capacitor.isNativePlatform === 'function' ? window.Capacitor.isNativePlatform() : (window.Capacitor.getPlatform && window.Capacitor.getPlatform() !== 'web')));
 const isDesktopApp = !!(window && window.process && window.process.type) || /Electron/i.test(navigator.userAgent || '');
-const offlineAvailable = isNativePlatform || isDesktopApp;
+const offlineAvailable = isNativePlatform() || isDesktopApp;
 if (!offlineAvailable) {
   try { localStorage.setItem('offlineMode', '0'); } catch (e) {}
 }
@@ -572,22 +605,18 @@ function crc32(bytes) {
   return (crc ^ -1) >>> 0;
 }
 
-function base64ToBytes(b64) {
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
-  return bytes;
-}
 async function fetchMediaBase64(path) {
   const clean = path.startsWith('/') ? path : ('/' + path);
-  const isNative = !!(window.Capacitor && (typeof window.Capacitor.isNativePlatform === 'function' ? window.Capacitor.isNativePlatform() : (window.Capacitor.getPlatform && window.Capacitor.getPlatform() !== 'web')));
-  const url = isNative ? ('https://medterms.hku.hk' + clean) : ('/api/asset?path=' + encodeURIComponent(clean));
+  const url = isNativePlatform() ? ('https://medterms.hku.hk' + clean) : ('/api/asset?path=' + encodeURIComponent(clean));
   const res = await fetch(url);
   if (!res.ok) throw new Error('HTTP ' + res.status);
-  const buf = await res.arrayBuffer();
-  const bytes = new Uint8Array(buf);
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  // Convert in chunks; char-by-char string concatenation is O(n^2) on large media files.
+  const CHUNK = 0x8000;
   let bin = '';
-  for (let i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+  }
   return btoa(bin);
 }
 function collectMediaPaths(terms) {
@@ -728,7 +757,7 @@ if (jsonZipBtn) jsonZipBtn.addEventListener('click', () => exportAssetsZip(false
 const fullZipBtn = $('#exportAssetsFullZipBtn');
 if (fullZipBtn) fullZipBtn.addEventListener('click', () => exportAssetsZip(true));
 
-const nativeZoomGuard = !!(window.Capacitor && (typeof window.Capacitor.isNativePlatform === 'function' ? window.Capacitor.isNativePlatform() : (window.Capacitor.getPlatform && window.Capacitor.getPlatform() !== 'web')));
+const nativeZoomGuard = isNativePlatform();
 if (nativeZoomGuard) {
   const vp = document.querySelector('meta[name="viewport"]');
   if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');

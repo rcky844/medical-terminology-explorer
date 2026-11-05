@@ -27,57 +27,58 @@ function stressIndex(t) {
 }
 function makeOddQuestion(type) {
   const terms = state.terms;
-  let attempts = 0;
-  while (attempts++ < 200) {
-    if (type === 'syllables') {
-      const counts = {};
-      terms.forEach(t => { counts[t.syllableNo] = counts[t.syllableNo] || []; counts[t.syllableNo].push(t); });
-      const validCounts = Object.keys(counts).filter(k => counts[k].length >= 2);
-      if (validCounts.length < 2) return null;
-      const c1 = validCounts[Math.floor(Math.random()*validCounts.length)];
-      let c2 = validCounts[Math.floor(Math.random()*validCounts.length)];
-      while (c2 === c1) c2 = validCounts[Math.floor(Math.random()*validCounts.length)];
-      const samePair = pick(counts[c1], 2);
-      const odd = pick(counts[c2], 1)[0];
-      const options = shuffle([samePair[0], samePair[1], odd]);
-      return { prompt: 'Which word has a different number of syllables?', options, answer: odd.word,
-        explanation: odd.word + ' has ' + odd.syllableNo + ' syllables; the others have ' + c1 + '.' };
-    }
-    if (type === 'sound') {
-      const groups = {};
-      terms.forEach(t => { const k = (t.word[0] || '').toLowerCase(); groups[k] = groups[k] || []; groups[k].push(t); });
-      const valid = Object.keys(groups).filter(k => groups[k].length >= 2);
-      if (valid.length < 2) return null;
-      const g1 = valid[Math.floor(Math.random()*valid.length)];
-      let g2 = valid[Math.floor(Math.random()*valid.length)];
-      while (g2 === g1) g2 = valid[Math.floor(Math.random()*valid.length)];
-      const samePair = pick(groups[g1], 2);
-      const odd = pick(groups[g2], 1)[0];
-      const options = shuffle([samePair[0], samePair[1], odd]);
-      return { prompt: 'Which word begins with a different sound (initial letter)?', options, answer: odd.word,
-        explanation: odd.word + ' begins with "' + odd.word[0].toUpperCase() + '"; the others begin with "' + g1.toUpperCase() + '".' };
-    }
-    if (type === 'stress') {
-      const groups = {};
-      terms.forEach(t => {
-        const si = stressIndex(t);
-        if (!si || si.idx < 0) return;
-        const key = si.idx + '/' + si.chunks;
-        groups[key] = groups[key] || [];
-        groups[key].push(t);
-      });
-      const valid = Object.keys(groups).filter(k => groups[k].length >= 2);
-      if (valid.length < 2) return null;
-      const g1 = valid[Math.floor(Math.random()*valid.length)];
-      let g2 = valid[Math.floor(Math.random()*valid.length)];
-      while (g2 === g1) g2 = valid[Math.floor(Math.random()*valid.length)];
-      const samePair = pick(groups[g1], 2);
-      const odd = pick(groups[g2], 1)[0];
-      const options = shuffle([samePair[0], samePair[1], odd]);
-      return { prompt: 'Which word has a different stress pattern (stress on a different syllable)?', options, answer: odd.word,
-        explanation: 'Stress position differs for ' + odd.word + '.' };
-    }
+
+  if (type === 'syllables') {
+    const counts = {};
+    terms.forEach(t => { if (t.syllableNo) (counts[t.syllableNo] = counts[t.syllableNo] || []).push(t); });
+    const validCounts = Object.keys(counts).filter(k => counts[k].length >= 2);
+    if (validCounts.length < 2) return null;
+    const c1 = validCounts[Math.floor(Math.random()*validCounts.length)];
+    let c2 = validCounts[Math.floor(Math.random()*validCounts.length)];
+    while (c2 === c1) c2 = validCounts[Math.floor(Math.random()*validCounts.length)];
+    const samePair = pick(counts[c1], 2);
+    const odd = pick(counts[c2], 1)[0];
+    const options = shuffle([samePair[0], samePair[1], odd]);
+    return { prompt: 'Which word has a different number of syllables?', options, answer: odd.word,
+      explanation: odd.word + ' has ' + odd.syllableNo + ' syllables; the others have ' + c1 + '.' };
   }
+
+  if (type === 'sound') {
+    const groups = {};
+    terms.forEach(t => { if (!t.word) return; const k = t.word[0].toLowerCase(); groups[k] = groups[k] || []; groups[k].push(t); });
+    const valid = Object.keys(groups).filter(k => groups[k].length >= 2);
+    if (valid.length < 2) return null;
+    const g1 = valid[Math.floor(Math.random()*valid.length)];
+    let g2 = valid[Math.floor(Math.random()*valid.length)];
+    while (g2 === g1) g2 = valid[Math.floor(Math.random()*valid.length)];
+    const samePair = pick(groups[g1], 2);
+    const odd = pick(groups[g2], 1)[0];
+    const options = shuffle([samePair[0], samePair[1], odd]);
+    return { prompt: 'Which word begins with a different sound (initial letter)?', options, answer: odd.word,
+      explanation: odd.word + ' begins with "' + odd.word[0].toUpperCase() + '"; the others begin with "' + g1.toUpperCase() + '".' };
+  }
+
+  if (type === 'stress') {
+    const groups = {};
+    terms.forEach(t => {
+      const si = stressIndex(t);
+      if (!si || si.idx < 0) return;
+      const key = si.idx + '/' + si.chunks;
+      groups[key] = groups[key] || [];
+      groups[key].push(t);
+    });
+    const valid = Object.keys(groups).filter(k => groups[k].length >= 2);
+    if (valid.length < 2) return null;
+    const g1 = valid[Math.floor(Math.random()*valid.length)];
+    let g2 = valid[Math.floor(Math.random()*valid.length)];
+    while (g2 === g1) g2 = valid[Math.floor(Math.random()*valid.length)];
+    const samePair = pick(groups[g1], 2);
+    const odd = pick(groups[g2], 1)[0];
+    const options = shuffle([samePair[0], samePair[1], odd]);
+    return { prompt: 'Which word has a different stress pattern (stress on a different syllable)?', options, answer: odd.word,
+      explanation: 'Stress position differs for ' + odd.word + '.' };
+  }
+
   return null;
 }
 
@@ -343,8 +344,8 @@ $('#modeTest').addEventListener('click', () => {
   const intro2 = $('#testIntro'); if (intro2) intro2.hidden = false;
   const body2 = $('#testBody'); if (body2) body2.hidden = true;
 });
-$('#genTest').addEventListener('click', () => { if (!confirm('Generate a new test and start the 10-minute timer?')) return; const intro = $('#testIntro'); if (intro) intro.hidden = true; const bodyEl = $('#testBody'); if (bodyEl) bodyEl.hidden = false; generateTest(); });
+$('#genTest').addEventListener('click', () => { if (!confirm('Generate a new test and start the 10-minute timer?')) return; generateTest(); });
 const startTestBtn = $('#startTest');
-if (startTestBtn) startTestBtn.addEventListener('click', () => { if (!confirm('Start the 10-minute practice test now?')) return; const intro = $('#testIntro'); if (intro) intro.hidden = true; const bodyEl = $('#testBody'); if (bodyEl) bodyEl.hidden = false; generateTest(); });
+if (startTestBtn) startTestBtn.addEventListener('click', () => { if (!confirm('Start the 10-minute practice test now?')) return; generateTest(); });
 $('#checkTest').addEventListener('click', () => gradeTest(false));
 $('#reviewSessionsBtn').addEventListener('click', showSessions);

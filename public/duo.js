@@ -166,7 +166,7 @@ function renderDuoQuestion() {
     renderWordle();
     return;
   } else if (q.kind === 'spelling') {
-    const url = q.term.sound_uk ? `https://medterms.hku.hk/storage/audio/mtlist/${encodeURIComponent(q.term.sound_uk)}` : null;
+    const url = mtlistAudioUrl(q.term.sound_uk);
     area.innerHTML = `<div class="question">
       <h3>Spelling: listen and type</h3>
       ${url ? audioPlayer(url,'Listen') : ''}
@@ -327,9 +327,8 @@ function renderWordle() {
     const submit = async () => {
       const val = (inp?.value || '').trim().toLowerCase();
       if (val.length !== q.answer.length || !/^[a-z]+$/.test(val)) { if (inp) inp.focus(); return; }
-      const isNative = !!(window.Capacitor && (typeof window.Capacitor.isNativePlatform === 'function' ? window.Capacitor.isNativePlatform() : (window.Capacitor.getPlatform && window.Capacitor.getPlatform() !== 'web')));
       try {
-        const url = isNative ? ('https://word.tips/unscramble/results/__data.json?letters=' + encodeURIComponent(val)) : ('/api/unscramble?letters=' + encodeURIComponent(val));
+        const url = isNativePlatform() ? ('https://word.tips/unscramble/results/__data.json?letters=' + encodeURIComponent(val)) : ('/api/unscramble?letters=' + encodeURIComponent(val));
         const res = await fetch(url);
         const txt = await res.text();
         if (!txt.toLowerCase().includes(val)) {

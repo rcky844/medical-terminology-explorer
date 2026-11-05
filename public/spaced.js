@@ -1,4 +1,8 @@
-const spacedState = { deck: [], index: 0, revealed: false, data: {}, history: [], deckKind: 'terms', timed: localStorage.getItem('srTimed')==='1', timerInterval: null };
+/* Leitner boxes: index = box, value = review delay in ms (box 0 unused). */
+const SR_INTERVALS = [0, 10*60*1000, 86400000, 3*86400000, 7*86400000, 14*86400000, 30*86400000];
+const SR_TIMED_SECONDS = 30;
+
+const spacedState = { deck: [], index: 0, revealed: false, data: {}, history: [], deckKind: 'terms', timed: localStorage.getItem('srTimed')==='1', timerInterval: null, cardKey: null, cardSecs: SR_TIMED_SECONDS };
 
 function srLoad() { try { return JSON.parse(localStorage.getItem('srData') || '{}'); } catch (e) { return {}; } }
 function srSave() { localStorage.setItem('srData', JSON.stringify(spacedState.data)); }
@@ -73,18 +77,24 @@ function renderSpaced() {
   }
   const t = spacedState.deck[spacedState.index];
   const key = t.key || t.word;
+  // Reset the countdown only for a new card — Reveal/Hide re-renders the DOM
+  // but must not restart the per-card timer (it used to jump back to 30s).
+  if (spacedState.cardKey !== key) {
+    spacedState.cardKey = key;
+    spacedState.cardSecs = SR_TIMED_SECONDS;
+  }
   const reverse = spacedState.deckKind === 'meaning';
   const frontText = reverse ? stripHtml(t.meaning_uk || t.meaning_us || '') : t.word;
   const backContent = reverse ? escapeHtml(t.word) : (t.meaning_uk || t.meaning_us || '');
-  const audioUrl = t.sound_uk ? `https://medterms.hku.hk/storage/audio/mtlist/${encodeURIComponent(t.sound_uk)}` : (t.audio ? t.audio : null);
+  const audioUrl = t.sound_uk ? mtlistAudioUrl(t.sound_uk) : (t.audio ? t.audio : null);
   area.innerHTML = `
     <div class="flashcard">
       <div class="flashfront">${escapeHtml(frontText)}</div>
-      ${spacedState.timed ? '<div class="muted" id="srTimer" style="text-align:center;margin:.25rem 0">Time: 30s</div>' : ''}
+      ${spacedState.timed ? `<div class="muted" id="srTimer" style="text-align:center;margin:.25rem 0">Time: ${spacedState.cardSecs}s</div>` : ''}
       <div class="srRevealWrap" style="display:flex;justify-content:center;margin:.75rem 0"><button class="btn secondary" id="srReveal">${spacedState.revealed ? 'Hide' : 'Reveal'}</button></div>
       <div id="srBack" ${spacedState.revealed ? '' : 'hidden'}>
         <div class="flashback">${backContent}</div>
-        ${wordPartsBlock ? (typeof wordPartsBlock === 'function' ? wordPartsBlock(t) : '') : ''}
+        ${wordPartsBlock(t)}
         ${audioUrl ? `<div class="media">${audioPlayer(audioUrl)}</div>` : ''}
         <div class="sr-buttons">
           <button class="srbtn again" data-rating="again">Again</button>
@@ -99,7 +109,6 @@ function renderSpaced() {
   const revealBtn = $('#srReveal');
   if (revealBtn) revealBtn.addEventListener('click', () => { spacedState.revealed = !spacedState.revealed; renderSpaced(); });
 
-  const INTERVALS = [0, 10*60*1000, 86400000, 3*86400000, 7*86400000, 14*86400000, 30*86400000];
   area.querySelectorAll('.srbtn').forEach(btn => {
     btn.addEventListener('click', () => {
       if (spacedState.timerInterval) { clearInterval(spacedState.timerInterval); spacedState.timerInterval = null; }
@@ -109,7 +118,7 @@ function renderSpaced() {
       else if (rating === 'hard') d.box = Math.max(1, d.box || 0);
       else if (rating === 'good') d.box = Math.min(6, (d.box || 0) + 1);
       else if (rating === 'easy') d.box = Math.min(6, (d.box || 0) + 2);
-      const interval = INTERVALS[d.box] || INTERVALS[1];
+      const interval = SR_INTERVALS[d.box] || SR_INTERVALS[1];
       d.next = Date.now() + interval;
       spacedState.data[key] = d;
       srSave();
@@ -120,15 +129,14 @@ function renderSpaced() {
       renderSpaced();
     });
   });
-  if (spacedState.timed && spacedState.index < spacedState.deck.length) {
-    let secs = 30;
+  if (spacedState.timed) {
     const timerEl = $('#srTimer');
-    if (timerEl) timerEl.textContent = 'Time: ' + secs + 's';
+    if (timerEl) timerEl.textContent = `Time: ${spacedState.cardSecs}s`;
     spacedState.timerInterval = setInterval(() => {
-      secs -= 1;
+      spacedState.cardSecs -= 1;
       const te = $('#srTimer');
-      if (te) te.textContent = 'Time: ' + secs + 's';
-      if (secs <= 0) {
+      if (te) te.textContent = `Time: ${spacedState.cardSecs}s`;
+      if (spacedState.cardSecs <= 0) {
         if (spacedState.timerInterval) { clearInterval(spacedState.timerInterval); spacedState.timerInterval = null; }
         const againBtn = area.querySelector('.srbtn.again');
         if (againBtn) againBtn.click();
@@ -152,7 +160,6 @@ function startSpaced() {
       renderSpaced();
     };
   }
-  try { spacedState.history = JSON.parse(localStorage.getItem('srHistory') || '[]'); } catch (e) { spacedState.history = []; }
   const hb = $('#srHistoryBtn');
   if (hb) hb.onclick = showSpacedHistory;
   const closeHist = $('#closeSpacedHistory');
@@ -190,8 +197,6 @@ function showSpacedHistory() {
   try { dlg.showModal(); } catch (e) { dlg.setAttribute('open',''); }
 }
 
-spacedState.data = srLoad();
-try { spacedState.history = JSON.parse(localStorage.getItem('srHistory') || '[]'); } catch (e) { spacedState.history = []; }
 $('#modeSpaced').addEventListener('click', () => {
   document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
   $('#modeSpaced').classList.add('active');
