@@ -324,9 +324,21 @@ function renderWordle() {
   if (!done) {
     const btn = $('#duoWordleBtn');
     const inp = $('#duoWordleInput');
-    const submit = () => {
+    const submit = async () => {
       const val = (inp?.value || '').trim().toLowerCase();
       if (val.length !== q.answer.length || !/^[a-z]+$/.test(val)) { if (inp) inp.focus(); return; }
+      const isNative = !!(window.Capacitor && (typeof window.Capacitor.isNativePlatform === 'function' ? window.Capacitor.isNativePlatform() : (window.Capacitor.getPlatform && window.Capacitor.getPlatform() !== 'web')));
+      try {
+        const url = isNative ? ('https://word.tips/unscramble/results/__data.json?letters=' + encodeURIComponent(val)) : ('/api/unscramble?letters=' + encodeURIComponent(val));
+        const res = await fetch(url);
+        const txt = await res.text();
+        if (!txt.toLowerCase().includes(val)) {
+          if (inp) { inp.value = ''; inp.focus(); }
+          const a0 = $('#duoAns');
+          if (a0) { a0.classList.remove('hidden'); a0.innerHTML = 'Not a valid word.'; }
+          return;
+        }
+      } catch (e) {}
       q.guesses.push(val);
       if (val === q.answer || q.guesses.length >= total) {
         const correct = q.guesses.includes(q.answer);
