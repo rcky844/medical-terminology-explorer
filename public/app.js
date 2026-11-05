@@ -543,11 +543,13 @@ if (closeHelp) closeHelp.addEventListener('click', () => { const d = $('#helpDia
 /* Offline assets */
 const offlineModeCheckbox = $('#offlineMode');
 const isNativePlatform = !!(window.Capacitor && (typeof window.Capacitor.isNativePlatform === 'function' ? window.Capacitor.isNativePlatform() : (window.Capacitor.getPlatform && window.Capacitor.getPlatform() !== 'web')));
-if (!isNativePlatform) {
+const isDesktopApp = !!(window && window.process && window.process.type) || /Electron/i.test(navigator.userAgent || '');
+const offlineAvailable = isNativePlatform || isDesktopApp;
+if (!offlineAvailable) {
   try { localStorage.setItem('offlineMode', '0'); } catch (e) {}
 }
 if (offlineModeCheckbox) {
-  if (!isNativePlatform) {
+  if (!offlineAvailable) {
     // Hide the offline-mode option for web users; keep asset exports available.
     const label = offlineModeCheckbox.closest('label');
     if (label) label.hidden = true;
