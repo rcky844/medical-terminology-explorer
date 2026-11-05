@@ -10,6 +10,7 @@ function duoShowMenu() {
       <button class="duocard" data-kind="choosing"><h3>Choosing</h3><p>Find the correct suffix / root / prefix</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="finding"><h3>Finding</h3><p>Find the correct word/meaning</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="guessing"><h3>Guessing</h3><p>Guess the stressed part or number of syllables</p><span class="tag">+10 pts</span></button>
+      <button class="duocard" data-kind="forming"><h3>Forming</h3><p>Form the word from its roots</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="spelling"><h3>Spelling</h3><p>Listen and fill the answer</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="matching"><h3>Matching</h3><p>Match the meaning of a thematic group</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="mixed"><h3>Mixed</h3><p>All types combined</p><span class="tag">+10 pts</span></button>
@@ -26,7 +27,7 @@ function updateDuoStats() {
 function buildDuoQuestions(kind, n=8) {
   const terms = state.terms.filter(t => t.word && (t.meaning_uk || t.meaning_us));
   const qs = [];
-  const kinds = kind === 'mixed' ? ['choosing','finding','guessing','spelling'] : [kind];
+  const kinds = kind === 'mixed' ? ['choosing','finding','guessing','forming','spelling'] : [kind];
   let guard = 0;
   while (qs.length < n && guard++ < n*80) {
     const k = kinds[Math.floor(Math.random()*kinds.length)];
@@ -64,6 +65,16 @@ function buildDuoQuestions(kind, n=8) {
         if (!opts.includes(String(target))) opts[0] = String(target);
         qs.push({ kind: 'guessing', sub: 'syll', term: t, answer: String(target), options: shuffle(opts) });
       }
+    } else if (k === 'forming') {
+      const t = terms[Math.floor(Math.random()*terms.length)];
+      const parts = [t.prefix, t.root, t.suffix].filter(Boolean);
+      if (!parts.length) continue;
+      const poolSize = (window.innerWidth <= 600) ? 10 : 20;
+      const otherParts = [];
+      terms.forEach(x => { [x.prefix, x.root, x.suffix].forEach(v => { if (v && !parts.includes(v)) otherParts.push(v); }); });
+      const extras = pick([...new Set(otherParts)], Math.max(0, poolSize - parts.length));
+      const pool = shuffle([...parts, ...extras]).map(txt => ({ text: txt, used: false }));
+      qs.push({ kind: 'forming', term: t, target: parts.slice(), pool, user: [] });
     } else if (k === 'choosing') {
       const t = terms[Math.floor(Math.random()*terms.length)];
       const types = ['prefix','root','suffix'].filter(x => t[x]);
@@ -130,6 +141,9 @@ function renderDuoQuestion() {
       <div class="answer hidden" id="duoAns"></div>
     </div>`;
     area.querySelectorAll('.duo-opt').forEach(b => b.addEventListener('click', () => answerGuessing(b, q.answer)));
+  } else if (q.kind === 'forming') {
+    renderForming();
+    return;
   } else if (q.kind === 'choosing') {
     const label = q.partKind;
     const opts = q.options.map(v => `<button class="option duo-opt" data-val="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('');
@@ -208,6 +222,54 @@ function renderMatching() {
     }
   };
   area.querySelectorAll('.match-item').forEach(b => b.addEventListener('click', () => handler(b)));
+}
+
+function renderForming() {
+  const q = duoState.current;
+  const area = $('#duoArea');
+  const builtHtml = q.user.length ? q.user.map(p => `<span class="chip">${escapeHtml(p)}</span>`).join(' ') : '<span class="muted">(tap parts below)</span>';
+  const poolHtml = q.pool.map((tile, i) => `<button class="option duo-tile${tile.used ? ' used' : ''}" data-i="${i}" ${tile.used ? 'disabled' : ''}>${escapeHtml(tile.text)}</button>`).join('');
+  area.innerHTML = `<div class="question">
+    <h3>Forming: form the word from its roots</h3>
+    <div class="prompt">Meaning: <strong>${escapeHtml(stripHtml(q.term.meaning_uk || q.term.meaning_us || ''))}</strong></div>
+    <div class="built" style="min-height:2rem;margin:.5rem 0">${builtHtml}</div>
+    <div class="options">${poolHtml}</div>
+    <div style="margin:.5rem 0;display:flex;gap:.5rem;justify-content:center">
+      <button class="btn secondary" id="duoFormClear">Clear</button>
+      <button class="btn" id="duoFormCheck">Check</button>
+    </div>
+    <div class="answer hidden" id="duoAns"></div>
+  </div>`;
+  area.querySelectorAll('.duo-tile').forEach(b => {
+    b.addEventListener('click', () => {
+      const i = +b.dataset.i;
+      if (q.pool[i].used) return;
+      q.pool[i].used = true;
+      q.user.push(q.pool[i].text);
+      renderForming();
+    });
+  });
+  const clear = $('#duoFormClear');
+  if (clear) clear.addEventListener('click', () => { q.user = []; q.pool.forEach(t => t.used = false); renderForming(); });
+  const check = $('#duoFormCheck');
+  if (check) check.addEventListener('click', checkForming);
+}
+function checkForming() {
+  const q = duoState.current;
+  const correct = q.user.length === q.target.length && q.user.every((v, i) => v === q.target[i]);
+  const area = $('#duoArea');
+  area.querySelectorAll('button').forEach(b => b.style.pointerEvents = 'none');
+  const ans = $('#duoAns');
+  if (correct) {
+    duoState.score += 10; duoState.streak += 1;
+    if (duoState.streak % 5 === 0) launchConfetti();
+    if (ans) { ans.classList.remove('hidden'); ans.innerHTML = 'Correct! +10'; }
+  } else {
+    duoState.streak = 0;
+    if (ans) { ans.classList.remove('hidden'); ans.innerHTML = 'Answer: ' + escapeHtml(q.target.join(' + ')); }
+  }
+  updateDuoStats();
+  setTimeout(() => { duoState.qi += 1; renderDuoQuestion(); }, 1200);
 }
 
 function finishDuoAnswer(correct, answerText) {
