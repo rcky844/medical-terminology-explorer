@@ -20,7 +20,7 @@ jobs:
           else
             V="$(node -p "require('./package.json').version")"
           fi
-          npm version "$V" --no-git-tag-version
+          npm pkg set version="$V"
           echo "version=$V" >> "$GITHUB_OUTPUT"
       - run: npm install
       - uses: actions/setup-java@v4
@@ -40,8 +40,8 @@ jobs:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: ./gradlew assembleDebug
       - name: Rename APK
-        run: mv android/app/build/outputs/apk/debug/*.apk medical-terminology-explorer_v${{ steps.version.outputs.version }}.apk
+        run: mv android/app/build/outputs/apk/debug/*.apk mt-explorer-android_${{ steps.version.outputs.version }}.apk
       - uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: medical-terminology-explorer_v${{ steps.version.outputs.version }}.apk
+          path: mt-explorer-android_${{ steps.version.outputs.version }}.apk

@@ -20,7 +20,7 @@ jobs:
           else
             V="$(node -p "require('./package.json').version")"
           fi
-          npm version "$V" --no-git-tag-version
+          npm pkg set version="$V"
           echo "version=$V" >> "$GITHUB_OUTPUT"
       - run: npm install
       - run: npx cap add ios || true
@@ -34,8 +34,8 @@ jobs:
           rm -rf Payload
           mkdir -p Payload
           cp -R build/App.xcarchive/Products/Applications/*.app Payload/
-          zip -r medical-terminology-explorer_v${{ steps.version.outputs.version }}.ipa Payload
+          zip -r mt-explorer-ios_${{ steps.version.outputs.version }}.ipa Payload
       - uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
-          path: ios/App/medical-terminology-explorer_v${{ steps.version.outputs.version }}.ipa
+          path: ios/App/mt-explorer-ios_${{ steps.version.outputs.version }}.ipa

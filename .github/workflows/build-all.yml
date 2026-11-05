@@ -34,17 +34,31 @@ jobs:
           else
             V="$(node -p "require('./package.json').version")"
           fi
-          npm version "$V" --no-git-tag-version
+          npm pkg set version="$V"
           echo "version=$V" >> "$GITHUB_OUTPUT"
       - run: npm install
       - run: npm run dist
+      - name: Rename desktop artifact
+        shell: bash
+        run: |
+          V="${{ steps.version.outputs.version }}"
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            f="$(find dist -maxdepth 1 -name '*.exe' | head -n 1)"
+            mv "$f" "dist/mt-explorer-windows-x64_v${V}.exe"
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            f="$(find dist -maxdepth 1 -name '*.dmg' | head -n 1)"
+            mv "$f" "dist/mt-explorer-macos_v${V}.dmg"
+          else
+            f="$(find dist -maxdepth 1 -name '*.AppImage' | head -n 1)"
+            mv "$f" "dist/mt-explorer-linux-x64_v${V}.AppImage"
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: desktop-${{ matrix.os }}
           path: |
-            dist/**/*.AppImage
-            dist/**/*.dmg
-            dist/**/*.exe
+            dist/mt-explorer-*.AppImage
+            dist/mt-explorer-*.dmg
+            dist/mt-explorer-*.exe
 
   android:
     name: Android
@@ -63,7 +77,7 @@ jobs:
           else
             V="$(node -p "require('./package.json').version")"
           fi
-          npm version "$V" --no-git-tag-version
+          npm pkg set version="$V"
           echo "version=$V" >> "$GITHUB_OUTPUT"
       - run: npm install
       - uses: actions/setup-java@v4
@@ -83,11 +97,11 @@ jobs:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: ./gradlew assembleDebug
       - name: Rename APK
-        run: mv android/app/build/outputs/apk/debug/*.apk medical-terminology-explorer_v${{ steps.version.outputs.version }}.apk
+        run: mv android/app/build/outputs/apk/debug/*.apk mt-explorer-android_${{ steps.version.outputs.version }}.apk
       - uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: medical-terminology-explorer_v${{ steps.version.outputs.version }}.apk
+          path: mt-explorer-android_${{ steps.version.outputs.version }}.apk
 
   ios:
     name: iOS
@@ -106,7 +120,7 @@ jobs:
           else
             V="$(node -p "require('./package.json').version")"
           fi
-          npm version "$V" --no-git-tag-version
+          npm pkg set version="$V"
           echo "version=$V" >> "$GITHUB_OUTPUT"
       - run: npm install
       - run: npx cap add ios || true
@@ -120,11 +134,11 @@ jobs:
           rm -rf Payload
           mkdir -p Payload
           cp -R build/App.xcarchive/Products/Applications/*.app Payload/
-          zip -r medical-terminology-explorer_v${{ steps.version.outputs.version }}.ipa Payload
+          zip -r mt-explorer-ios_${{ steps.version.outputs.version }}.ipa Payload
       - uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
-          path: ios/App/medical-terminology-explorer_v${{ steps.version.outputs.version }}.ipa
+          path: ios/App/mt-explorer-ios_${{ steps.version.outputs.version }}.ipa
 
   release:
     name: Release

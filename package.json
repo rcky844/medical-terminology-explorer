@@ -43,7 +43,7 @@
     "linux": {
       "target": "AppImage"
     },
-    "artifactName": "medical-terminology-explorer-full_v${version}.${ext}"
+    "artifactName": "mt-explorer_v${version}.${ext}"
   },
   "dependencies": {
     "@capacitor/filesystem": "^6.0.0",
