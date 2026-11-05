@@ -22,7 +22,8 @@ function wordPartCards() {
 }
 
 function spacedCandidates(kind) {
-  return kind === 'parts' ? wordPartCards() : state.terms.filter(t => t.word && t.meaning_uk);
+  if (kind === 'parts') return wordPartCards();
+  return state.terms.filter(t => t.word && t.meaning_uk);
 }
 
 function srDueTerms(kind) {
@@ -72,14 +73,17 @@ function renderSpaced() {
   }
   const t = spacedState.deck[spacedState.index];
   const key = t.key || t.word;
+  const reverse = spacedState.deckKind === 'meaning';
+  const frontText = reverse ? stripHtml(t.meaning_uk || t.meaning_us || '') : t.word;
+  const backHtml = reverse ? `<div class="flashfront" style="margin-bottom:.5rem">${escapeHtml(t.word)}</div>` : `<div class="meaning-full">${t.meaning_uk || ''}</div>`;
   const audioUrl = t.sound_uk ? `https://medterms.hku.hk/storage/audio/mtlist/${encodeURIComponent(t.sound_uk)}` : (t.audio ? t.audio : null);
   area.innerHTML = `
     <div class="flashcard">
-      <div class="flashfront">${escapeHtml(t.word)}</div>
+      <div class="flashfront">${escapeHtml(frontText)}</div>
       ${spacedState.timed ? '<div class="muted" id="srTimer" style="text-align:center;margin:.25rem 0">Time: 30s</div>' : ''}
       <div style="margin:.75rem 0"><button class="btn secondary" id="srReveal">${spacedState.revealed ? 'Hide' : 'Reveal'}</button></div>
       <div id="srBack" ${spacedState.revealed ? '' : 'hidden'}>
-        <div class="meaning-full">${t.meaning_uk || ''}</div>
+        ${backHtml}
         ${wordPartsBlock ? (typeof wordPartsBlock === 'function' ? wordPartsBlock(t) : '') : ''}
         ${audioUrl ? `<div class="media">${audioPlayer(audioUrl)}</div>` : ''}
         <div class="sr-buttons">
@@ -152,12 +156,15 @@ function startSpaced() {
   const hb = $('#srHistoryBtn');
   if (hb) hb.onclick = showSpacedHistory;
   const termsBtn = $('#deckTerms');
+  const meaningBtn = $('#deckMeaning');
   const partsBtn = $('#deckParts');
   function markDeck() {
     if (termsBtn) termsBtn.classList.toggle('active', spacedState.deckKind === 'terms');
+    if (meaningBtn) meaningBtn.classList.toggle('active', spacedState.deckKind === 'meaning');
     if (partsBtn) partsBtn.classList.toggle('active', spacedState.deckKind === 'parts');
   }
   if (termsBtn) termsBtn.onclick = () => { buildSpacedDeck('terms'); spacedState.deckKind='terms'; markDeck(); renderSpaced(); };
+  if (meaningBtn) meaningBtn.onclick = () => { buildSpacedDeck('meaning'); spacedState.deckKind='meaning'; markDeck(); renderSpaced(); };
   if (partsBtn) partsBtn.onclick = () => { buildSpacedDeck('parts'); spacedState.deckKind='parts'; markDeck(); renderSpaced(); };
   markDeck();
   buildSpacedDeck(spacedState.deckKind || 'terms');
