@@ -209,7 +209,7 @@ function renderWod() {
           <input type="date" id="wodDatePicker" class="wodbtn" value="${wodDate.toISOString().slice(0,10)}" />
           <button class="wodbtn" id="wodPrev">◀ Prev</button>
           <button class="wodbtn" id="wodNext"${isToday(wodViewDate)?' disabled':''}>Next ▶</button>
-          <button class="wodbtn" id="wodToday">Today</button>
+          <button class="wodbtn" id="wodToday"${isToday(wodViewDate)?' disabled':''}>Today</button>
           <button class="wodbtn" id="wodToggle">Collapse</button>
           <button class="wodbtn" id="wodDismiss">Dismiss today</button>
         </div>
