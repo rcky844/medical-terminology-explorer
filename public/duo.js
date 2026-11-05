@@ -9,6 +9,7 @@ function duoShowMenu() {
     <div class="duocards">
       <button class="duocard" data-kind="choosing"><h3>Choosing</h3><p>Find the correct suffix / root / prefix</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="finding"><h3>Finding</h3><p>Find the correct word/meaning</p><span class="tag">+10 pts</span></button>
+      <button class="duocard" data-kind="guessing"><h3>Guessing</h3><p>Guess the number of syllables</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="spelling"><h3>Spelling</h3><p>Listen and fill the answer</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="matching"><h3>Matching</h3><p>Match the meaning of a thematic group</p><span class="tag">+10 pts</span></button>
       <button class="duocard" data-kind="mixed"><h3>Mixed</h3><p>All types combined</p><span class="tag">+10 pts</span></button>
@@ -25,7 +26,7 @@ function updateDuoStats() {
 function buildDuoQuestions(kind, n=8) {
   const terms = state.terms.filter(t => t.word && (t.meaning_uk || t.meaning_us));
   const qs = [];
-  const kinds = kind === 'mixed' ? ['choosing','finding','spelling'] : [kind];
+  const kinds = kind === 'mixed' ? ['choosing','finding','guessing','spelling'] : [kind];
   let guard = 0;
   while (qs.length < n && guard++ < n*80) {
     const k = kinds[Math.floor(Math.random()*kinds.length)];
@@ -38,6 +39,19 @@ function buildDuoQuestions(kind, n=8) {
       const opts = pick(terms,4); if (!opts.includes(t)) opts[0] = t;
       const reverse = Math.random() < 0.5;
       qs.push({ kind:'finding', term: t, options: shuffle(opts), reverse });
+    } else if (k === 'guessing') {
+      const t = terms[Math.floor(Math.random()*terms.length)];
+      const target = Number(t.syllableNo);
+      if (!Number.isFinite(target)) continue;
+      const counts = [...new Set(terms.map(x => Number(x.syllableNo)).filter(n => Number.isFinite(n)))];
+      const others = counts.filter(n => n !== target);
+      const distr = pick(others, 3);
+      while (distr.length < 3) {
+        const r = Math.floor(Math.random() * 6) + 1;
+        if (r !== target && !distr.includes(r)) distr.push(r);
+      }
+      const opts = shuffle([target, ...distr].map(String));
+      qs.push({ kind: 'guessing', term: t, answer: String(target), options: opts });
     } else if (k === 'choosing') {
       const t = terms[Math.floor(Math.random()*terms.length)];
       const types = ['prefix','root','suffix'].filter(x => t[x]);
@@ -94,6 +108,15 @@ function renderDuoQuestion() {
       </div>`;
     }
     area.querySelectorAll('.duo-opt').forEach(b => b.addEventListener('click', () => answerFinding(b, q.term.word)));
+  } else if (q.kind === 'guessing') {
+    const opts = q.options.map(v => `<button class="option duo-opt" data-val="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('');
+    area.innerHTML = `<div class="question">
+      <h3>Guessing: number of syllables</h3>
+      <div class="prompt">Term: <strong>${escapeHtml(q.term.word)}</strong></div>
+      <div class="options">${opts}</div>
+      <div class="answer hidden" id="duoAns"></div>
+    </div>`;
+    area.querySelectorAll('.duo-opt').forEach(b => b.addEventListener('click', () => answerGuessing(b, q.answer)));
   } else if (q.kind === 'choosing') {
     const label = q.partKind;
     const opts = q.options.map(v => `<button class="option duo-opt" data-val="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('');
@@ -192,6 +215,12 @@ function answerFinding(btn, correctWord) {
     areaMarkCorrect('word', correctWord);
   }
   finishDuoAnswer(isCorrect, correctWord);
+}
+function answerGuessing(btn, correct) {
+  const isCorrect = btn.dataset.val === correct;
+  btn.classList.add(isCorrect ? 'correct' : 'wrong');
+  if (!isCorrect) areaMarkCorrect('val', correct);
+  finishDuoAnswer(isCorrect, correct);
 }
 function answerChoosing(btn, q) {
   const correctVal = q.term[q.partKind];
