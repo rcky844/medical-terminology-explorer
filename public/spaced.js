@@ -155,6 +155,8 @@ function startSpaced() {
   try { spacedState.history = JSON.parse(localStorage.getItem('srHistory') || '[]'); } catch (e) { spacedState.history = []; }
   const hb = $('#srHistoryBtn');
   if (hb) hb.onclick = showSpacedHistory;
+  const closeHist = $('#closeSpacedHistory');
+  if (closeHist) closeHist.addEventListener('click', () => { const d = $('#spacedHistoryDialog'); if (d) d.close(); });
   const termsBtn = $('#deckTerms');
   const meaningBtn = $('#deckMeaning');
   const partsBtn = $('#deckParts');
@@ -172,16 +174,20 @@ function startSpaced() {
 }
 
 function showSpacedHistory() {
+  const dlg = $('#spacedHistoryDialog');
   const panel = $('#spacedHistory');
-  panel.classList.toggle('hidden');
-  if (panel.classList.contains('hidden')) return;
+  if (!dlg || !panel) return;
+  panel.innerHTML = '';
   const list = spacedState.history || [];
-  if (!list.length) { panel.innerHTML = 'No review history yet.'; return; }
-  panel.innerHTML = '<div class="sessions">' + list.map(h =>
-    `<div class="session"><strong>${new Date(h.time).toLocaleString()}</strong> — ${escapeHtml(h.word)} — ${escapeHtml(h.rating)}${h.timed ? ' (timed)' : ''}</div>`
-  ).join('') + '</div><div style="margin-top:.5rem"><button class="btn secondary" id="srClearHistory">Clear history</button></div>';
+  if (!list.length) { panel.innerHTML = 'No review history yet.'; }
+  else {
+    panel.innerHTML = '<div class="sessions">' + list.map(h =>
+      `<div class="session"><strong>${new Date(h.time).toLocaleString()}</strong> — ${escapeHtml(h.word)} — ${escapeHtml(h.rating)}${h.timed ? ' (timed)' : ''}</div>`
+    ).join('') + '</div><div style="margin-top:.5rem"><button class="btn secondary" id="srClearHistory">Clear history</button></div>';
+  }
   const cb = $('#srClearHistory');
   if (cb) cb.addEventListener('click', () => { if (!confirm('Clear spaced-repetition history?')) return; spacedState.history = []; localStorage.removeItem('srHistory'); showSpacedHistory(); });
+  try { dlg.showModal(); } catch (e) { dlg.setAttribute('open',''); }
 }
 
 spacedState.data = srLoad();
