@@ -75,7 +75,7 @@ function renderSpaced() {
   const key = t.key || t.word;
   const reverse = spacedState.deckKind === 'meaning';
   const frontText = reverse ? stripHtml(t.meaning_uk || t.meaning_us || '') : t.word;
-  const backHtml = reverse ? `<div class="flashfront" style="margin-bottom:.5rem">${escapeHtml(t.word)}</div>` : `<div class="meaning-full">${t.meaning_uk || ''}</div>`;
+  const backContent = reverse ? escapeHtml(t.word) : (t.meaning_uk || t.meaning_us || '');
   const audioUrl = t.sound_uk ? `https://medterms.hku.hk/storage/audio/mtlist/${encodeURIComponent(t.sound_uk)}` : (t.audio ? t.audio : null);
   area.innerHTML = `
     <div class="flashcard">
@@ -83,7 +83,7 @@ function renderSpaced() {
       ${spacedState.timed ? '<div class="muted" id="srTimer" style="text-align:center;margin:.25rem 0">Time: 30s</div>' : ''}
       <div class="srRevealWrap" style="display:flex;justify-content:center;margin:.75rem 0"><button class="btn secondary" id="srReveal">${spacedState.revealed ? 'Hide' : 'Reveal'}</button></div>
       <div id="srBack" ${spacedState.revealed ? '' : 'hidden'}>
-        ${backHtml}
+        <div class="flashback">${backContent}</div>
         ${wordPartsBlock ? (typeof wordPartsBlock === 'function' ? wordPartsBlock(t) : '') : ''}
         ${audioUrl ? `<div class="media">${audioPlayer(audioUrl)}</div>` : ''}
         <div class="sr-buttons">
