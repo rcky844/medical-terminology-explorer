@@ -161,3 +161,5 @@ dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(2px); }
 
 #spacedHistoryDialog { max-height: 80vh; overflow: visible; }
 #spacedHistory { max-height: calc(80vh - 2.5rem); overflow-y: auto; }
+#sessionsDialog { max-height: 80vh; overflow: visible; }
+#sessionsPanel { max-height: calc(80vh - 2.5rem); overflow-y: auto; }

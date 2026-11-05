@@ -279,12 +279,14 @@ function gradeTest(auto=false) {
 
 
 function showSessions() {
+  const dlg = $('#sessionsDialog');
   const panel = $('#sessionsPanel');
-  panel.classList.toggle('hidden');
-  if (panel.classList.contains('hidden')) return;
+  if (!dlg || !panel) return;
   const list = JSON.parse(localStorage.getItem('mtTestSessions') || '[]');
-  if (!list.length) { panel.innerHTML = 'No saved sessions yet.'; return; }
-  panel.innerHTML = list.map(sess => `
+  if (!list.length) {
+    panel.innerHTML = 'No saved sessions yet.';
+  } else {
+    panel.innerHTML = list.map(sess => `
     <div class="session">
       <div class="sessionhead">
         <strong>${new Date(sess.createdAt).toLocaleString()}</strong>
@@ -295,6 +297,7 @@ function showSessions() {
       <div class="sessitems hidden" id="sess-${sess.id}"></div>
     </div>
   `).join('');
+  }
   panel.querySelectorAll('.sessdetail').forEach(b => {
     b.addEventListener('click', () => {
       const id = +b.dataset.id;
@@ -322,6 +325,9 @@ function showSessions() {
       showSessions();
     });
   });
+  const closeBtn = $('#closeSessions');
+  if (closeBtn) closeBtn.addEventListener('click', () => { if (dlg) dlg.close(); });
+  try { dlg.showModal(); } catch (e) { dlg.setAttribute('open',''); }
 }
 
 

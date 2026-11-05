@@ -52,7 +52,10 @@
         <span id="timer" class="count"></span>
         <span id="score" class="count"></span>
       </div>
-      <div id="sessionsPanel" class="sessions hidden"></div>
+      <dialog id="sessionsDialog">
+        <button id="closeSessions" class="close" aria-label="Close">×</button>
+        <div id="sessionsPanel" class="sessions"></div>
+      </dialog>
       <div id="testIntro" class="question">
         <h3>Ready to begin?</h3>
         <p>The test has 3 sections (definitions, terms from definitions, odd one out) with a 10-minute time limit. Questions are hidden until you start.</p>
