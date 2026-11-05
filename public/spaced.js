@@ -81,7 +81,7 @@ function renderSpaced() {
     <div class="flashcard">
       <div class="flashfront">${escapeHtml(frontText)}</div>
       ${spacedState.timed ? '<div class="muted" id="srTimer" style="text-align:center;margin:.25rem 0">Time: 30s</div>' : ''}
-      <div style="margin:.75rem 0"><button class="btn secondary" id="srReveal">${spacedState.revealed ? 'Hide' : 'Reveal'}</button></div>
+      <div class="srRevealWrap" style="display:flex;justify-content:center;margin:.75rem 0"><button class="btn secondary" id="srReveal">${spacedState.revealed ? 'Hide' : 'Reveal'}</button></div>
       <div id="srBack" ${spacedState.revealed ? '' : 'hidden'}>
         ${backHtml}
         ${wordPartsBlock ? (typeof wordPartsBlock === 'function' ? wordPartsBlock(t) : '') : ''}
@@ -93,7 +93,7 @@ function renderSpaced() {
           <button class="srbtn easy" data-rating="easy">Easy</button>
         </div>
       </div>
-      <div class="muted" style="margin-top:.5rem">Card ${spacedState.index+1} of ${spacedState.deck.length}</div>
+      <div class="muted" style="margin-top:.5rem;text-align:center">Card ${spacedState.index+1} of ${spacedState.deck.length}</div>
     </div>`;
 
   const revealBtn = $('#srReveal');
