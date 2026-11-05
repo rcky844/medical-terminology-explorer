@@ -9,6 +9,7 @@ const VOCAB_URL = 'https://medterms.hku.hk/storage/vocab.json';
 const WOD_URL = 'https://medterms.hku.hk/storage/wordofday.json';
 const CATEGORY_URL = 'https://medterms.hku.hk/storage/category.json';
 const PUBLIC_DIR = path.join(__dirname, 'public');
+const APP_VERSION = require('./package.json').version;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -74,6 +75,12 @@ const server = http.createServer((req, res) => {
   else if (req.url.startsWith('/api/vocab')) proxy(VOCAB_URL, req, res);
   else if (req.url.startsWith('/api/wordofday')) proxy(WOD_URL, req, res);
   else if (req.url.startsWith('/api/category')) proxy(CATEGORY_URL, req, res);
+  else if (req.url === '/api/version' || req.url.startsWith('/api/version?')) {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.end(JSON.stringify({ version: APP_VERSION }));
+  }
   else if (req.url.startsWith('/api/asset')) {
     const u = new URL(req.url, 'http://localhost');
     const assetPath = u.searchParams.get('path') || '';

@@ -1,3 +1,4 @@
+const APP_VERSION = '1.1.0';
 const state = { terms: [], filtered: [], vocab: null, categories: {}, test: null, wodTerms: null };
 let wodViewDate = new Date();
 function isToday(d){ const t=new Date(); return d.toDateString()===t.toDateString(); }
@@ -719,5 +720,26 @@ if (nativeZoomGuard) {
   const vp = document.querySelector('meta[name="viewport"]');
   if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
 }
+
+async function updateAppVersion() {
+  const el = document.getElementById('appVersion');
+  const el2 = document.getElementById('version');
+  const endpoints = ['/api/version', '/version.json', './version.json'];
+  for (const u of endpoints) {
+    try {
+      const res = await fetch(u);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data && (data.version || data.appVersion)) {
+        if (el) el.textContent = data.version || data.appVersion;
+        if (el2) el2.textContent = data.version || data.appVersion;
+        return;
+      }
+    } catch (e) {}
+  }
+  if (el && !el.textContent) el.textContent = APP_VERSION;
+  if (el2 && !el2.textContent) el2.textContent = APP_VERSION;
+}
+updateAppVersion();
 
 load();

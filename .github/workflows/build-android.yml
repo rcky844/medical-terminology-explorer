@@ -2,11 +2,6 @@ name: Build Android
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: Version to build
-        required: true
-        default: '1.0.0'
 
 jobs:
   android:
@@ -16,6 +11,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Determine version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            V="${GITHUB_REF_NAME#v}"
+          else
+            V="$(node -p "require('./package.json').version")"
+          fi
+          npm version "$V" --no-git-tag-version
+          echo "version=$V" >> "$GITHUB_OUTPUT"
       - run: npm install
       - uses: actions/setup-java@v4
         with:
@@ -34,8 +40,8 @@ jobs:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: ./gradlew assembleDebug
       - name: Rename APK
-        run: mv android/app/build/outputs/apk/debug/*.apk medical-terminology-explorer_v${{ inputs.version }}.apk
+        run: mv android/app/build/outputs/apk/debug/*.apk medical-terminology-explorer_v${{ steps.version.outputs.version }}.apk
       - uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: medical-terminology-explorer_v${{ inputs.version }}.apk
+          path: medical-terminology-explorer_v${{ steps.version.outputs.version }}.apk

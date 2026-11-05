@@ -6,14 +6,11 @@ on:
       - 'v*'
   workflow_dispatch:
     inputs:
-      version:
-        description: Version to build
-        required: true
-        default: '1.0.0'
       create_release:
         description: Create GitHub release
         required: false
-        default: 'false'
+        type: boolean
+        default: false
 
 jobs:
   desktop:
@@ -28,6 +25,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Determine version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            V="${GITHUB_REF_NAME#v}"
+          else
+            V="$(node -p "require('./package.json').version")"
+          fi
+          npm version "$V" --no-git-tag-version
+          echo "version=$V" >> "$GITHUB_OUTPUT"
       - run: npm install
       - run: npm run dist
       - uses: actions/upload-artifact@v4
@@ -46,6 +54,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Determine version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            V="${GITHUB_REF_NAME#v}"
+          else
+            V="$(node -p "require('./package.json').version")"
+          fi
+          npm version "$V" --no-git-tag-version
+          echo "version=$V" >> "$GITHUB_OUTPUT"
       - run: npm install
       - uses: actions/setup-java@v4
         with:
@@ -64,11 +83,11 @@ jobs:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: ./gradlew assembleDebug
       - name: Rename APK
-        run: mv android/app/build/outputs/apk/debug/*.apk medical-terminology-explorer_v${{ inputs.version }}.apk
+        run: mv android/app/build/outputs/apk/debug/*.apk medical-terminology-explorer_v${{ steps.version.outputs.version }}.apk
       - uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: medical-terminology-explorer_v${{ inputs.version }}.apk
+          path: medical-terminology-explorer_v${{ steps.version.outputs.version }}.apk
 
   ios:
     name: iOS
@@ -78,6 +97,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Determine version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            V="${GITHUB_REF_NAME#v}"
+          else
+            V="$(node -p "require('./package.json').version")"
+          fi
+          npm version "$V" --no-git-tag-version
+          echo "version=$V" >> "$GITHUB_OUTPUT"
       - run: npm install
       - run: npx cap add ios || true
       - run: npx cap sync ios
@@ -90,15 +120,15 @@ jobs:
           rm -rf Payload
           mkdir -p Payload
           cp -R build/App.xcarchive/Products/Applications/*.app Payload/
-          zip -r medical-terminology-explorer_v${{ inputs.version }}.ipa Payload
+          zip -r medical-terminology-explorer_v${{ steps.version.outputs.version }}.ipa Payload
       - uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
-          path: ios/App/medical-terminology-explorer_v${{ inputs.version }}.ipa
+          path: ios/App/medical-terminology-explorer_v${{ steps.version.outputs.version }}.ipa
 
   release:
     name: Release
-    if: ${{ github.ref_type == 'tag' || inputs.create_release == true }}
+    if: ${{ github.ref_type == 'tag' || inputs.create_release }}
     needs: [desktop, android, ios]
     runs-on: ubuntu-latest
     permissions:
@@ -110,8 +140,8 @@ jobs:
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', inputs.version) }}
-          name: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', inputs.version) }}
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'v1.1.0' }}
+          name: ${{ github.ref_type == 'tag' && github.ref_name || 'v1.1.0' }}
           files: |
             release-assets/**/*.AppImage
             release-assets/**/*.dmg
