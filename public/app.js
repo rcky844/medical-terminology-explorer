@@ -217,7 +217,6 @@ function renderWod() {
       <div class="muted" style="margin-bottom:.5rem">${wodDate.toDateString()}</div>
       <div id="wodContent">
         <div class="wodtitle">${escapeHtml(t.word)}</div>
-        <span class="muted">${today}</span>
         ${t.wordStress_uk ? `<div class="stress">${t.wordStress_uk}</div>` : ''}
         ${wordPartsBlock(t)}
         <div class="meaning-full">${t.meaning_uk || ''}</div>
