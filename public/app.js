@@ -1,4 +1,4 @@
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 const state = { terms: [], filtered: [], vocab: null, categories: {}, test: null, wodTerms: null };
 let wodViewDate = new Date();
 function isToday(d){ const t=new Date(); return d.toDateString()===t.toDateString(); }
