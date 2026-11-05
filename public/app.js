@@ -542,12 +542,24 @@ if (closeHelp) closeHelp.addEventListener('click', () => { const d = $('#helpDia
 
 /* Offline assets */
 const offlineModeCheckbox = $('#offlineMode');
+const isNativePlatform = !!(window.Capacitor && (typeof window.Capacitor.isNativePlatform === 'function' ? window.Capacitor.isNativePlatform() : (window.Capacitor.getPlatform && window.Capacitor.getPlatform() !== 'web')));
+if (!isNativePlatform) {
+  try { localStorage.setItem('offlineMode', '0'); } catch (e) {}
+}
 if (offlineModeCheckbox) {
-  offlineModeCheckbox.checked = localStorage.getItem('offlineMode') === '1';
-  offlineModeCheckbox.addEventListener('change', () => {
-    localStorage.setItem('offlineMode', offlineModeCheckbox.checked ? '1' : '0');
-    const st = $('#settingsStatus'); if (st) st.textContent = 'Offline mode ' + (offlineModeCheckbox.checked ? 'enabled.' : 'disabled.');
-  });
+  if (!isNativePlatform) {
+    // Hide the offline-mode option for web users; keep asset exports available.
+    const label = offlineModeCheckbox.closest('label');
+    if (label) label.hidden = true;
+    const prepareBtn = $('#prepareOfflineBtn');
+    if (prepareBtn) prepareBtn.hidden = true;
+  } else {
+    offlineModeCheckbox.checked = localStorage.getItem('offlineMode') === '1';
+    offlineModeCheckbox.addEventListener('change', () => {
+      localStorage.setItem('offlineMode', offlineModeCheckbox.checked ? '1' : '0');
+      const st = $('#settingsStatus'); if (st) st.textContent = 'Offline mode ' + (offlineModeCheckbox.checked ? 'enabled.' : 'disabled.');
+    });
+  }
 }
 function crc32(bytes) {
   let crc = -1;
