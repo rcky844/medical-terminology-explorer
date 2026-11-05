@@ -10,8 +10,8 @@
     "start": "node server.js",
     "desktop": "electron .",
     "dist": "npm run version:sync && electron-builder --publish never",
-    "cap:add:android": "npx cap add android",
-    "cap:add:ios": "npx cap add ios",
+    "cap:add:android": "npx cap add android && npm run version:sync",
+    "cap:add:ios": "npx cap add ios && npm run version:sync",
     "cap:sync": "npm run version:sync && npx cap sync",
     "cap:open:android": "npx cap open android",
     "cap:open:ios": "npx cap open ios"

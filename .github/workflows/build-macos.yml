@@ -54,6 +54,8 @@ jobs:
           echo "version=$V" >> "$GITHUB_OUTPUT"
       - run: npm install
       - run: npx cap add ios || true
+      - name: Stamp version into native project
+        run: npm run version:sync
       - run: npx cap sync ios
       - name: Build iOS archive
         working-directory: ios/App
