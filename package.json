@@ -4,12 +4,15 @@
   "description": "Explorer for the HKU Medical Terminology list. Fetches and Base64-decodes live data (no local copy).",
   "main": "electron.js",
   "scripts": {
+    "version:sync": "node scripts/sync-version.js",
+    "prestart": "npm run version:sync",
+    "version": "node scripts/sync-version.js --git-add",
     "start": "node server.js",
     "desktop": "electron .",
-    "dist": "electron-builder --publish never",
+    "dist": "npm run version:sync && electron-builder --publish never",
     "cap:add:android": "npx cap add android",
     "cap:add:ios": "npx cap add ios",
-    "cap:sync": "npx cap sync",
+    "cap:sync": "npm run version:sync && npx cap sync",
     "cap:open:android": "npx cap open android",
     "cap:open:ios": "npx cap open ios"
   },

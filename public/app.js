@@ -1,4 +1,3 @@
-const APP_VERSION = '1.2.0';
 const state = { terms: [], filtered: [], vocab: null, categories: {}, test: null, wodTerms: null };
 let wodViewDate = new Date();
 function isToday(d){ const t=new Date(); return d.toDateString()===t.toDateString(); }
@@ -763,24 +762,26 @@ if (nativeZoomGuard) {
   if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
 }
 
+/* Version display. Single source of truth is package.json:
+   - /api/version is served by the Node server (web + Electron), reading it
+   - /version.json is an auto-generated copy bundled into native builds
+   If neither endpoint is reachable, fall back to a dev marker. */
+const VERSION_ENDPOINTS = ['/api/version', '/version.json'];
 async function updateAppVersion() {
-  const el = document.getElementById('appVersion');
-  const el2 = document.getElementById('version');
-  const endpoints = ['/api/version', '/version.json', './version.json'];
-  for (const u of endpoints) {
+  const els = ['appVersion', 'version'].map(id => document.getElementById(id));
+  for (const u of VERSION_ENDPOINTS) {
     try {
       const res = await fetch(u);
       if (!res.ok) continue;
       const data = await res.json();
       if (data && (data.version || data.appVersion)) {
-        if (el) el.textContent = data.version || data.appVersion;
-        if (el2) el2.textContent = data.version || data.appVersion;
+        const v = data.version || data.appVersion;
+        els.forEach(el => { if (el) el.textContent = v; });
         return;
       }
     } catch (e) {}
   }
-  if (el && !el.textContent) el.textContent = APP_VERSION;
-  if (el2 && !el2.textContent) el2.textContent = APP_VERSION;
+  els.forEach(el => { if (el && !el.textContent) el.textContent = 'Development'; });
 }
 updateAppVersion();
 
