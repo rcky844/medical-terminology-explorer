@@ -162,6 +162,8 @@ function startSpaced() {
   }
   const hb = $('#srHistoryBtn');
   if (hb) hb.onclick = showSpacedHistory;
+  const ab = $('#srAnkiBtn');
+  if (ab) ab.onclick = exportAnkiTxt;
   const closeHist = $('#closeSpacedHistory');
   if (closeHist) closeHist.addEventListener('click', () => { const d = $('#spacedHistoryDialog'); if (d) d.close(); });
   const termsBtn = $('#deckTerms');
@@ -195,6 +197,40 @@ function showSpacedHistory() {
   const cb = $('#srClearHistory');
   if (cb) cb.addEventListener('click', () => { if (!confirm('Clear spaced-repetition history?')) return; spacedState.history = []; localStorage.removeItem('srHistory'); showSpacedHistory(); });
   try { dlg.showModal(); } catch (e) { dlg.setAttribute('open',''); }
+}
+
+async function exportAnkiTxt() {
+  const kind = spacedState.deckKind || 'terms';
+  const cards = spacedCandidates(kind);
+  const lines = cards.map(t => {
+    const term = String(t.word || '').replace(/\s+/g, ' ').trim();
+    const meaning = stripHtml(t.meaning_uk || t.meaning_us || '').replace(/\s+/g, ' ').trim();
+    return `${term},${meaning}`;
+  }).filter(l => l.trim() && l !== ',');
+  const text = lines.join('\n') + (lines.length ? '\n' : '');
+  const source = kind === 'parts' ? 'parts' : 'terms';
+  const filename = `mt-anki-${source}.txt`;
+  const isNative = (typeof isNativePlatform === 'function') ? isNativePlatform() : false;
+  if (isNative) {
+    try {
+      const FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
+      const Share = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share;
+      if (!FS) throw new Error('Filesystem plugin unavailable');
+      const result = await FS.writeFile({ path: filename, data: text, directory: 'DOCUMENTS', encoding: 'utf8' });
+      if (Share && result && result.uri) await Share.share({ title: 'MT Explorer Anki', url: result.uri, dialogTitle: 'Save/export Anki txt' });
+      const st = $('#spacedStats'); if (st) st.textContent = `Exported ${lines.length} cards to ${filename}.`;
+      return;
+    } catch (e) {
+      alert('Native export failed: ' + e.message);
+      return;
+    }
+  }
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
 }
 
 $('#modeSpaced').addEventListener('click', () => {

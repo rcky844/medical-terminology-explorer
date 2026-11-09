@@ -79,14 +79,17 @@
     <section id="spacedView" hidden>
       <div class="spacedhead">
         <h2>Spaced Repetition Flashcards</h2>
+        <div class="spacedactions">
+          <button id="srTimedBtn" class="btn secondary">Timed: Off</button>
+          <button id="srHistoryBtn" class="btn secondary">Review History</button>
+          <button id="srAnkiBtn" class="btn secondary">Export to Anki</button>
+        </div>
         <div class="spaceddecks">
           <button id="deckTerms" class="btn secondary">Terms</button>
           <button id="deckMeaning" class="btn secondary">Meaning</button>
           <button id="deckParts" class="btn secondary">Word Parts</button>
+          <span id="spacedStats" class="count"></span>
         </div>
-        <button id="srTimedBtn" class="btn secondary">Timed: Off</button>
-        <button id="srHistoryBtn" class="btn secondary">Review History</button>
-        <span id="spacedStats" class="count"></span>
       </div>
       <dialog id="spacedHistoryDialog">
         <button id="closeSpacedHistory" class="close" aria-label="Close">×</button>
