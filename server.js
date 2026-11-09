@@ -81,12 +81,6 @@ const server = http.createServer((req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.end(JSON.stringify({ version: APP_VERSION }));
   }
-  else if (req.url.startsWith('/api/unscramble')) {
-    const u = new URL(req.url, 'http://localhost');
-    const letters = u.searchParams.get('letters') || '';
-    const target = 'https://word.tips/unscramble/results/__data.json?letters=' + encodeURIComponent(letters);
-    proxy(target, req, res);
-  }
   else if (req.url.startsWith('/api/asset')) {
     const u = new URL(req.url, 'http://localhost');
     const assetPath = u.searchParams.get('path') || '';
