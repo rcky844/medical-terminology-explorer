@@ -328,10 +328,8 @@ function renderWordle() {
       const val = (inp?.value || '').trim().toLowerCase();
       if (val.length !== q.answer.length || !/^[a-z]+$/.test(val)) { if (inp) inp.focus(); return; }
       try {
-        const url = isNativePlatform() ? ('https://word.tips/unscramble/results/__data.json?letters=' + encodeURIComponent(val)) : ('/api/unscramble?letters=' + encodeURIComponent(val));
-        const res = await fetch(url);
-        const txt = await res.text();
-        if (!txt.toLowerCase().includes(val)) {
+        const res = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(val));
+        if (!res.ok) {
           if (inp) { inp.value = ''; inp.focus(); }
           const a0 = $('#duoAns');
           if (a0) { a0.classList.remove('hidden'); a0.innerHTML = 'Not a valid word.'; }
