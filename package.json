@@ -1,6 +1,6 @@
 {
   "name": "medical-terminology-explorer",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Explorer for the HKU Medical Terminology list. Fetches and Base64-decodes live data (no local copy).",
   "main": "electron.js",
   "scripts": {
