@@ -326,7 +326,15 @@ function renderWordle() {
     const inp = $('#duoWordleInput');
     const submit = async () => {
       const val = (inp?.value || '').trim().toLowerCase();
-      if (val.length !== q.answer.length || !/^[a-z]+$/.test(val)) { if (inp) inp.focus(); return; }
+      if (val.length !== q.answer.length || !/^[a-z]+$/.test(val)) {
+        if (inp) { inp.value = ''; inp.focus(); }
+        const a0 = $('#duoAns');
+        if (a0) {
+          a0.classList.remove('hidden');
+          a0.innerHTML = (val.length > 0 && val.length < q.answer.length) ? 'Word not long enough.' : 'Not a valid word.';
+        }
+        return;
+      }
       try {
         const res = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(val));
         if (!res.ok) {
