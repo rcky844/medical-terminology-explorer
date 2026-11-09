@@ -48,10 +48,14 @@ function buildSpacedDeck(kind) {
   kind = kind || spacedState.deckKind;
   spacedState.deckKind = kind;
   const { due, fresh } = srDueTerms(kind);
-  const deck = due.slice().sort(() => Math.random() - 0.5);
+  const deck = due.slice().sort((a, b) => {
+    const da = spacedState.data[a.key || a.word] || {}, db = spacedState.data[b.key || b.word] || {};
+    if ((da.box || 0) !== (db.box || 0)) return (da.box || 0) - (db.box || 0);
+    return (da.next || 0) - (db.next || 0);
+  });
   const need = Math.max(0, 20 - deck.length);
   deck.push(...pick(fresh, need));
-  spacedState.deck = pick(deck, deck.length);
+  spacedState.deck = deck.slice();
   spacedState.index = 0;
   spacedState.revealed = false;
 }
@@ -71,7 +75,7 @@ function renderSpaced() {
     return;
   }
   if (spacedState.index >= spacedState.deck.length) {
-    area.innerHTML = `<div class="question"><h3>Session complete!</h3><p>Reviewed ${spacedState.deck.length} cards.</p><button class="btn" id="srReload">New session</button></div>`;
+    area.innerHTML = `<div class="question"><h3>Session complete!</h3><p>Reviewed ${spacedState.deck.length} cards.</p><button class="btn" id="srReload">Load due/new cards</button></div>`;
     const b = $('#srReload'); if (b) b.addEventListener('click', () => { buildSpacedDeck(); renderSpaced(); });
     return;
   }
@@ -149,6 +153,7 @@ function renderSpaced() {
 function startSpaced() {
   spacedState.data = srLoad();
   try { spacedState.history = JSON.parse(localStorage.getItem('srHistory') || '[]'); } catch (e) { spacedState.history = []; }
+  spacedState.deckKind = localStorage.getItem('srDeckKind') || spacedState.deckKind || 'terms';
   const tb = $('#srTimedBtn');
   if (tb) {
     tb.textContent = 'Timed: ' + (spacedState.timed ? 'On' : 'Off');
@@ -174,9 +179,9 @@ function startSpaced() {
     if (meaningBtn) meaningBtn.classList.toggle('active', spacedState.deckKind === 'meaning');
     if (partsBtn) partsBtn.classList.toggle('active', spacedState.deckKind === 'parts');
   }
-  if (termsBtn) termsBtn.onclick = () => { buildSpacedDeck('terms'); spacedState.deckKind='terms'; markDeck(); renderSpaced(); };
-  if (meaningBtn) meaningBtn.onclick = () => { buildSpacedDeck('meaning'); spacedState.deckKind='meaning'; markDeck(); renderSpaced(); };
-  if (partsBtn) partsBtn.onclick = () => { buildSpacedDeck('parts'); spacedState.deckKind='parts'; markDeck(); renderSpaced(); };
+  if (termsBtn) termsBtn.onclick = () => { buildSpacedDeck('terms'); spacedState.deckKind='terms'; localStorage.setItem('srDeckKind', 'terms'); markDeck(); renderSpaced(); };
+  if (meaningBtn) meaningBtn.onclick = () => { buildSpacedDeck('meaning'); spacedState.deckKind='meaning'; localStorage.setItem('srDeckKind', 'meaning'); markDeck(); renderSpaced(); };
+  if (partsBtn) partsBtn.onclick = () => { buildSpacedDeck('parts'); spacedState.deckKind='parts'; localStorage.setItem('srDeckKind', 'parts'); markDeck(); renderSpaced(); };
   markDeck();
   buildSpacedDeck(spacedState.deckKind || 'terms');
   renderSpaced();
