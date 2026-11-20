@@ -7,14 +7,14 @@ function duoShowMenu() {
   const menu = $('#duoMenu');
   menu.innerHTML = `
     <div class="duocards">
-      <button class="duocard" data-kind="choosing"><h3>Choosing</h3><p>Find the correct suffix / root / prefix</p><span class="tag">+10 pts</span></button>
-      <button class="duocard" data-kind="finding"><h3>Finding</h3><p>Find the correct word/meaning</p><span class="tag">+10 pts</span></button>
-      <button class="duocard" data-kind="guessing"><h3>Guessing</h3><p>Guess the stressed part or number of syllables</p><span class="tag">+10 pts</span></button>
-      <button class="duocard" data-kind="forming"><h3>Forming</h3><p>Form the word from its roots</p><span class="tag">+10 pts</span></button>
-      <button class="duocard" data-kind="wordle"><h3>Wordle</h3><p>Guess the hidden word</p><span class="tag">+10 pts</span></button>
-      <button class="duocard" data-kind="spelling"><h3>Spelling</h3><p>Listen and fill the answer</p><span class="tag">+10 pts</span></button>
-      <button class="duocard" data-kind="matching"><h3>Matching</h3><p>Match the meaning of a thematic group</p><span class="tag">+10 pts</span></button>
-      <button class="duocard" data-kind="mixed"><h3>Mixed</h3><p>All types combined</p><span class="tag">+10 pts</span></button>
+      <button class="duocard" data-kind="choosing"><h6>Choosing</h6><p>Find the correct suffix / root / prefix</p><span class="chip">+10 pts</span></button>
+      <button class="duocard" data-kind="finding"><h6>Finding</h6><p>Find the correct word/meaning</p><span class="chip">+10 pts</span></button>
+      <button class="duocard" data-kind="guessing"><h6>Guessing</h6><p>Guess the stressed part or number of syllables</p><span class="chip">+10 pts</span></button>
+      <button class="duocard" data-kind="forming"><h6>Forming</h6><p>Form the word from its roots</p><span class="chip">+10 pts</span></button>
+      <button class="duocard" data-kind="wordle"><h6>Wordle</h6><p>Guess the hidden word</p><span class="chip">+10 pts</span></button>
+      <button class="duocard" data-kind="spelling"><h6>Spelling</h6><p>Listen and fill the answer</p><span class="chip">+10 pts</span></button>
+      <button class="duocard" data-kind="matching"><h6>Matching</h6><p>Match the meaning of a thematic group</p><span class="chip">+10 pts</span></button>
+      <button class="duocard" data-kind="mixed"><h6>Mixed</h6><p>All types combined</p><span class="chip">+10 pts</span></button>
     </div>`;
   menu.querySelectorAll('.duocard').forEach(b => b.addEventListener('click', () => startDuo(b.dataset.kind)));
   updateDuoStats();
@@ -112,7 +112,7 @@ function renderDuoQuestion() {
   updateDuoStats();
   const area = $('#duoArea'); area.innerHTML = '';
   if (duoState.qi >= duoState.questions.length) {
-    area.innerHTML = `<div class="question"><h3>Round complete!</h3><p class="result">Final score: ${duoState.score}</p><button class="btn" id="duoBack">Back to menu</button></div>`;
+    area.innerHTML = `<article class="question"><h6>Round complete!</h6><p class="result">Final score: ${duoState.score}</p><button class="border" id="duoBack"><i>arrow_back</i><span>Back to menu</span></button></article>`;
     const b = $('#duoBack'); if (b) b.addEventListener('click', duoShowMenu);
     return;
   }
@@ -120,45 +120,45 @@ function renderDuoQuestion() {
   duoState.current = q;
   if (q.kind === 'finding') {
     if (q.reverse) {
-      const opts = q.options.map(t => `<button class="option duo-opt" data-word="${escapeHtml(t.word)}">${escapeHtml(t.word)}</button>`).join('');
-      area.innerHTML = `<div class="question">
-        <h3>Finding: correct word</h3>
-        <div class="prompt">Meaning: <strong>${escapeHtml(stripHtml(q.term.meaning_uk||q.term.meaning_us||''))}</strong></div>
+      const opts = q.options.map(t => `<button class="option duo-opt border" data-word="${escapeHtml(t.word)}">${escapeHtml(t.word)}</button>`).join('');
+      area.innerHTML = `<article class="question">
+        <h6>Finding: correct word</h6>
+        <p class="prompt">Meaning: <strong>${escapeHtml(stripHtml(q.term.meaning_uk||q.term.meaning_us||''))}</strong></p>
         <div class="options">${opts}</div>
         <div class="answer hidden" id="duoAns"></div>
-      </div>`;
+      </article>`;
     } else {
-      const opts = q.options.map(t => `<button class="option duo-opt" data-word="${escapeHtml(t.word)}">${escapeHtml(stripHtml(t.meaning_uk||t.meaning_us||''))}</button>`).join('');
-      area.innerHTML = `<div class="question">
-        <h3>Finding: correct meaning</h3>
-        <div class="prompt">Term: <strong>${escapeHtml(q.term.word)}</strong></div>
+      const opts = q.options.map(t => `<button class="option duo-opt border" data-word="${escapeHtml(t.word)}">${escapeHtml(stripHtml(t.meaning_uk||t.meaning_us||''))}</button>`).join('');
+      area.innerHTML = `<article class="question">
+        <h6>Finding: correct meaning</h6>
+        <p class="prompt">Term: <strong>${escapeHtml(q.term.word)}</strong></p>
         <div class="options">${opts}</div>
         <div class="answer hidden" id="duoAns"></div>
-      </div>`;
+      </article>`;
     }
     area.querySelectorAll('.duo-opt').forEach(b => b.addEventListener('click', () => answerFinding(b, q.term.word)));
   } else if (q.kind === 'guessing') {
-    const opts = q.options.map(v => `<button class="option duo-opt" data-val="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('');
+    const opts = q.options.map(v => `<button class="option duo-opt border" data-val="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('');
     const title = q.sub === 'stress' ? 'Guessing: stressed syllable' : 'Guessing: number of syllables';
-    area.innerHTML = `<div class="question">
-      <h3>${title}</h3>
-      <div class="prompt">Term: <strong>${escapeHtml(q.term.word)}</strong></div>
+    area.innerHTML = `<article class="question">
+      <h6>${title}</h6>
+      <p class="prompt">Term: <strong>${escapeHtml(q.term.word)}</strong></p>
       <div class="options">${opts}</div>
       <div class="answer hidden" id="duoAns"></div>
-    </div>`;
+    </article>`;
     area.querySelectorAll('.duo-opt').forEach(b => b.addEventListener('click', () => answerGuessing(b, q.answer)));
   } else if (q.kind === 'forming') {
     renderForming();
     return;
   } else if (q.kind === 'choosing') {
     const label = q.partKind;
-    const opts = q.options.map(v => `<button class="option duo-opt" data-val="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('');
-    area.innerHTML = `<div class="question">
-      <h3>Choosing: correct ${label}</h3>
-      <div class="prompt">For: <strong>${escapeHtml(q.term.word)}</strong></div>
+    const opts = q.options.map(v => `<button class="option duo-opt border" data-val="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('');
+    area.innerHTML = `<article class="question">
+      <h6>Choosing: correct ${label}</h6>
+      <p class="prompt">For: <strong>${escapeHtml(q.term.word)}</strong></p>
       <div class="options">${opts}</div>
       <div class="answer hidden" id="duoAns"></div>
-    </div>`;
+    </article>`;
     area.querySelectorAll('.duo-opt').forEach(b => b.addEventListener('click', () => answerChoosing(b, q)));
   } else if (q.kind === 'matching') {
     renderMatching();
@@ -167,13 +167,18 @@ function renderDuoQuestion() {
     return;
   } else if (q.kind === 'spelling') {
     const url = mtlistAudioUrl(q.term.sound_uk);
-    area.innerHTML = `<div class="question">
-      <h3>Spelling: listen and type</h3>
+    area.innerHTML = `<article class="question">
+      <h6>Spelling: listen and type</h6>
       ${url ? audioPlayer(url,'Listen') : ''}
-      <input id="duoSpell" type="text" placeholder="Type the term…" />
-      <div style="margin-top:.5rem"><button class="btn" id="duoSpellBtn">Check</button></div>
+      <div class="inline-form mt">
+        <div class="field label border">
+          <input id="duoSpell" type="text" placeholder=" " />
+          <label>Type the term…</label>
+        </div>
+        <button id="duoSpellBtn"><i>check</i><span>Check</span></button>
+      </div>
       <div class="answer hidden" id="duoAns"></div>
-    </div>`;
+    </article>`;
     const btn = $('#duoSpellBtn');
     if (btn) btn.addEventListener('click', () => checkDuoSpelling(q));
   }
@@ -197,7 +202,7 @@ function renderMatching() {
   function html() {
     const left = sample.map(t => `<button class="match-item" data-side="term" data-id="${escapeHtml(t.word)}">${escapeHtml(t.word)}</button>`).join('');
     const right = defs.map(t => `<button class="match-item" data-side="def" data-id="${escapeHtml(t.word)}">${escapeHtml(stripHtml(t.meaning_uk || t.meaning_us))}</button>`).join('');
-    return `<div class="question"><h3>Matching: thematic group</h3><p class="muted">Match each term to its meaning.</p><div class="matchgrid"><div class="matchcol">${left}</div><div class="matchcol">${right}</div></div><div id="duoAns" class="answer hidden"></div></div>`;
+    return `<article class="question"><h6>Matching: thematic group</h6><p class="muted">Match each term to its meaning.</p><div class="matchgrid"><div class="matchcol">${left}</div><div class="matchcol">${right}</div></div><div id="duoAns" class="answer hidden"></div></article>`;
   }
   area.innerHTML = html();
 
@@ -237,18 +242,18 @@ function renderForming() {
   const q = duoState.current;
   const area = $('#duoArea');
   const builtHtml = q.user.length ? q.user.map(p => `<span class="chip">${escapeHtml(p)}</span>`).join(' ') : '<span class="muted">(tap parts below)</span>';
-  const poolHtml = q.pool.map((tile, i) => `<button class="option duo-tile${tile.used ? ' used' : ''}" data-i="${i}" ${tile.used ? 'disabled' : ''}>${escapeHtml(tile.text)}</button>`).join('');
-  area.innerHTML = `<div class="question">
-    <h3>Forming: form the word from its roots</h3>
-    <div class="prompt">Meaning: <strong>${escapeHtml(stripHtml(q.term.meaning_uk || q.term.meaning_us || ''))}</strong></div>
-    <div class="built" style="min-height:2rem;margin:.5rem 0">${builtHtml}</div>
+  const poolHtml = q.pool.map((tile, i) => `<button class="option duo-tile border${tile.used ? ' used' : ''}" data-i="${i}" ${tile.used ? 'disabled' : ''}>${escapeHtml(tile.text)}</button>`).join('');
+  area.innerHTML = `<article class="question">
+    <h6>Forming: form the word from its roots</h6>
+    <p class="prompt">Meaning: <strong>${escapeHtml(stripHtml(q.term.meaning_uk || q.term.meaning_us || ''))}</strong></p>
+    <div class="built mt" style="min-height:2rem">${builtHtml}</div>
     <div class="options">${poolHtml}</div>
-    <div style="margin:.5rem 0;display:flex;gap:.5rem;justify-content:center">
-      <button class="btn secondary" id="duoFormClear">Clear</button>
-      <button class="btn" id="duoFormCheck">Check</button>
+    <div class="row center-align mt">
+      <button class="border" id="duoFormClear"><i>backspace</i><span>Clear</span></button>
+      <button id="duoFormCheck"><i>check</i><span>Check</span></button>
     </div>
     <div class="answer hidden" id="duoAns"></div>
-  </div>`;
+  </article>`;
   area.querySelectorAll('.duo-tile').forEach(b => {
     b.addEventListener('click', () => {
       const i = +b.dataset.i;
@@ -311,16 +316,19 @@ function renderWordle() {
     }
   }
   const done = q.guesses.length >= total || q.guesses.includes(q.answer);
-  area.innerHTML = `<div class="question">
-    <h3>Wordle: guess the word</h3>
+  area.innerHTML = `<article class="question">
+    <h6>Wordle: guess the word</h6>
     <p class="muted">Length: ${q.answer.length} • Attempts: ${q.guesses.length}/${total}</p>
     <div class="wlgrid">${rows.join('')}</div>
-    ${done ? '' : `<div style="margin:.5rem 0;display:flex;gap:.5rem;justify-content:center">
-      <input id="duoWordleInput" type="text" maxlength="${q.answer.length}" placeholder="Type guess (${q.answer.length} letters)" style="text-transform:uppercase" />
-      <button class="btn" id="duoWordleBtn">Guess</button>
+    ${done ? '' : `<div class="inline-form mt">
+      <div class="field label border">
+        <input id="duoWordleInput" class="upper" type="text" maxlength="${q.answer.length}" placeholder=" " />
+        <label>Type guess (${q.answer.length} letters)</label>
+      </div>
+      <button id="duoWordleBtn"><i>send</i><span>Guess</span></button>
     </div>`}
     <div class="answer hidden" id="duoAns"></div>
-  </div>`;
+  </article>`;
   if (!done) {
     const btn = $('#duoWordleBtn');
     const inp = $('#duoWordleInput');

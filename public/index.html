@@ -4,72 +4,120 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Medical Terminology Explorer</title>
+  <link href="https://cdn.jsdelivr.net/npm/beercss@5.0.3/dist/cdn/beer.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
+  <script type="module" src="https://cdn.jsdelivr.net/npm/beercss@5.0.3/dist/cdn/beer.min.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/material-dynamic-colors@1.1.4/dist/cdn/material-dynamic-colors.min.js"></script>
 </head>
-<body>
-  <header>
-    <div class="wrap">
-      <div class="headerrow">
-        <div>
-          <h1>Medical Terminology Explorer</h1>
-        </div>
-        <div class="headerbuttons">
-          <button id="settingsBtn" class="btn secondary" aria-label="Settings">⚙ Settings</button>
-          <button id="helpBtn" class="btn secondary" aria-label="Help">? Help</button>
-        </div>
-      </div>
-      <nav class="nav">
-        <button id="modeBrowser" class="navbtn active">Browse</button>
-        <button id="modeTest" class="navbtn">Practice Test</button>
-        <button id="modeDuo" class="navbtn">Duolingo</button>
-        <button id="modeSpaced" class="navbtn">Spaced</button>
-      </nav>
+<body class="dark">
+  <header class="responsive">
+    <nav>
+      <i class="large primary-text" aria-hidden="true">medical_services</i>
+      <h6 class="max">Medical Terminology Explorer</h6>
+      <button id="settingsBtn" class="circle transparent" aria-label="Settings" title="Settings">
+        <i>settings</i>
+      </button>
+      <button id="helpBtn" class="circle transparent" aria-label="Help" title="Help">
+        <i>help</i>
+      </button>
+    </nav>
+    <div class="tabs">
+      <a id="modeBrowser" class="navbtn active" role="button" tabindex="0" aria-label="Browse">
+        <i>search</i>
+        <span>Browse</span>
+      </a>
+      <a id="modeTest" class="navbtn" role="button" tabindex="0" aria-label="Practice Test">
+        <i>quiz</i>
+        <span>Practice Test</span>
+      </a>
+      <a id="modeDuo" class="navbtn" role="button" tabindex="0" aria-label="Duolingo">
+        <i>sports_esports</i>
+        <span>Duolingo</span>
+      </a>
+      <a id="modeSpaced" class="navbtn" role="button" tabindex="0" aria-label="Spaced Repetition">
+        <i>style</i>
+        <span>Spaced</span>
+      </a>
     </div>
   </header>
 
-  <main class="wrap">
+  <main class="responsive">
     <section id="browserView">
       <section id="wodSection" class="wod" hidden></section>
-      <section class="toolbar">
-        <input id="search" type="search" placeholder="Search term, meaning, root, prefix…" autocomplete="off" />
-        <select id="levelFilter"><option value="">All levels</option></select>
-        <select id="catFilter"><option value="">All categories</option></select>
-        <button id="showWodBtn" class="btn secondary" hidden>Show Word of the Day</button>
+      <div class="filterbar">
+        <div class="field label prefix border round max">
+          <i>search</i>
+          <input id="search" type="search" placeholder=" " autocomplete="off" />
+          <label>Search term, meaning, root, prefix…</label>
+        </div>
+        <div class="field label border">
+          <select id="levelFilter"><option value="">All levels</option></select>
+          <label>Level</label>
+        </div>
+        <div class="field label border">
+          <select id="catFilter"><option value="">All categories</option></select>
+          <label>Category</label>
+        </div>
+        <button id="showWodBtn" class="border" hidden>
+          <i>today</i>
+          <span>Word of the Day</span>
+        </button>
         <span id="count" class="count"></span>
-      </section>
+      </div>
 
-      <section id="status" class="status">Loading terminology list…</section>
+      <div id="status" class="status center-align">Loading terminology list…</div>
 
-      <section id="grid" class="grid" hidden></section>
+      <section id="grid" class="card-grid" hidden></section>
     </section>
 
     <section id="testView" hidden>
       <div class="testhead">
-        <h2>Practice Test</h2>
-        <button id="genTest" class="btn">Generate New Test</button>
-        <button id="checkTest" class="btn">Check Answers</button>
-        <button id="reviewSessionsBtn" class="btn secondary">Review Sessions</button>
+        <h5 class="max">Practice Test</h5>
+        <button id="genTest">
+          <i>autorenew</i>
+          <span>Generate New Test</span>
+        </button>
+        <button id="checkTest" class="border">
+          <i>done_all</i>
+          <span>Check Answers</span>
+        </button>
+        <button id="reviewSessionsBtn" class="border">
+          <i>history</i>
+          <span>Review Sessions</span>
+        </button>
         <span id="timer" class="count"></span>
         <span id="score" class="count"></span>
       </div>
-      <dialog id="sessionsDialog">
-        <button id="closeSessions" class="close" aria-label="Close">×</button>
+
+      <dialog id="sessionsDialog" class="large">
+        <header class="fixed">
+          <nav>
+            <h5 class="max">Review Sessions</h5>
+            <button id="closeSessions" class="circle transparent" aria-label="Close">
+              <i>close</i>
+            </button>
+          </nav>
+        </header>
         <div id="sessionsPanel" class="sessions"></div>
       </dialog>
-      <div id="testIntro" class="question">
-        <h3>Ready to begin?</h3>
+
+      <article id="testIntro" class="question center-align">
+        <h5>Ready to begin?</h5>
         <p>The test has 3 sections (definitions, terms from definitions, odd one out) with a 10-minute time limit. Questions are hidden until you start.</p>
-        <button id="startTest" class="btn">Start Test</button>
-      </div>
+        <button id="startTest">
+          <i>play_arrow</i>
+          <span>Start Test</span>
+        </button>
+      </article>
       <div id="testBody" class="testbody" hidden></div>
     </section>
 
     <section id="duoView" hidden>
-      <div class="duohead">
-        <h2>Duolingo Mode</h2>
-        <div class="duostats">
-          <span id="duoScore" class="count"></span>
-          <span id="duoStreak" class="count"></span>
+      <div class="sectionhead">
+        <h5 class="max">Duolingo Mode</h5>
+        <div class="row tiny-space">
+          <span id="duoScore" class="chip"></span>
+          <span id="duoStreak" class="chip"></span>
         </div>
       </div>
       <div id="duoMenu" class="duomenu"></div>
@@ -77,78 +125,138 @@
     </section>
 
     <section id="spacedView" hidden>
-      <div class="spacedhead">
-        <h2>Spaced Repetition Flashcards</h2>
+      <div class="sectionhead spacedhead">
+        <h5 class="max">Spaced Repetition Flashcards</h5>
         <div class="spacedactions">
-          <button id="srTimedBtn" class="btn secondary">Timed: Off</button>
-          <button id="srHistoryBtn" class="btn secondary">Review History</button>
-          <button id="srAnkiBtn" class="btn secondary">Export to Anki</button>
+          <button id="srTimedBtn" class="border">Timed: Off</button>
+          <button id="srHistoryBtn" class="border">Review History</button>
+          <button id="srAnkiBtn" class="border">Export to Anki</button>
         </div>
         <div class="spaceddecks">
-          <button id="deckTerms" class="btn secondary">Terms</button>
-          <button id="deckMeaning" class="btn secondary">Meaning</button>
-          <button id="deckParts" class="btn secondary">Word Parts</button>
+          <button id="deckTerms" class="border">Terms</button>
+          <button id="deckMeaning" class="border">Meaning</button>
+          <button id="deckParts" class="border">Word Parts</button>
           <span id="spacedStats" class="count"></span>
         </div>
       </div>
-      <dialog id="spacedHistoryDialog">
-        <button id="closeSpacedHistory" class="close" aria-label="Close">×</button>
+
+      <dialog id="spacedHistoryDialog" class="large">
+        <header class="fixed">
+          <nav>
+            <h5 class="max">Review History</h5>
+            <button id="closeSpacedHistory" class="circle transparent" aria-label="Close">
+              <i>close</i>
+            </button>
+          </nav>
+        </header>
         <div id="spacedHistory"></div>
       </dialog>
+
       <div id="spacedArea" class="spacedarea"></div>
     </section>
   </main>
 
-  <dialog id="detail">
-    <button id="closeDetail" class="close" aria-label="Close">×</button>
+  <dialog id="detail" class="detail-dialog">
+    <header class="fixed">
+      <nav class="right-align">
+        <button id="closeDetail" class="circle transparent" aria-label="Close">
+          <i>close</i>
+        </button>
+      </nav>
+    </header>
     <div id="detailBody"></div>
   </dialog>
 
   <dialog id="celebrateDialog" class="celebrate">
-    <button id="closeCelebrate" class="close" aria-label="Close">×</button>
+    <header class="fixed">
+      <nav class="right-align">
+        <button id="closeCelebrate" class="circle transparent" aria-label="Close">
+          <i>close</i>
+        </button>
+      </nav>
+    </header>
     <div class="celebrate-body"></div>
   </dialog>
 
-  <dialog id="settingsDialog">
-    <button id="closeSettings" class="close" aria-label="Close">×</button>
-    <h2>Settings</h2>
-    <p>Export/import locally stored progress.</p>
-    <h3>Offline</h3>
-    <label><input type="checkbox" id="offlineMode" /> Offline mode (cache core data)</label>
-    <div style="margin:.5rem 0">
-      <button id="prepareOfflineBtn" class="btn secondary">Prepare offline assets</button>
-      <button id="exportAssetsJsonZipBtn" class="btn secondary">Export JSON assets (ZIP)</button>
-      <button id="exportAssetsFullZipBtn" class="btn secondary">Export full assets (ZIP)</button>
+  <dialog id="settingsDialog" class="settings-dialog">
+    <header class="fixed">
+      <nav>
+        <h5 class="max">Settings</h5>
+        <button id="closeSettings" class="circle transparent" aria-label="Close">
+          <i>close</i>
+        </button>
+      </nav>
+    </header>
+    <p class="muted">Export/import locally stored progress.</p>
+
+    <h6>Offline</h6>
+    <label class="checkbox">
+      <input type="checkbox" id="offlineMode" />
+      <span>Offline mode (cache core data)</span>
+    </label>
+    <div class="row wrap">
+      <button id="prepareOfflineBtn" class="border">
+        <i>offline_bolt</i>
+        <span>Prepare offline assets</span>
+      </button>
+      <button id="exportAssetsJsonZipBtn" class="border">
+        <i>folder_zip</i>
+        <span>Export JSON assets (ZIP)</span>
+      </button>
+      <button id="exportAssetsFullZipBtn" class="border">
+        <i>folder_zip</i>
+        <span>Export full assets (ZIP)</span>
+      </button>
     </div>
-    <h3>Data</h3>
-    <button id="exportDataBtn" class="btn">Export user data (JSON)</button>
-    <input id="importFile" type="file" accept="application/json" hidden />
-    <button id="importDataBtn" class="btn secondary">Import user data (JSON)</button>
-    <div style="margin-top:1rem">
-      <h3>PDF report</h3>
-      <label><input type="checkbox" value="test" checked /> Practice Test sessions</label><br>
-      <label><input type="checkbox" value="spaced" checked /> Spaced repetition data/history</label><br>
-      <label><input type="checkbox" value="wod" /> Word of the Day info</label><br>
-      <label><input type="checkbox" value="duo" /> Duolingo current session</label><br>
-      <button id="generatePdfBtn" class="btn" style="margin-top:.5rem">Generate PDF report</button>
+
+    <h6>Data</h6>
+    <div class="row wrap">
+      <button id="exportDataBtn">
+        <i>download</i>
+        <span>Export user data (JSON)</span>
+      </button>
+      <input id="importFile" type="file" accept="application/json" hidden />
+      <button id="importDataBtn" class="border">
+        <i>upload</i>
+        <span>Import user data (JSON)</span>
+      </button>
     </div>
+
+    <h6>PDF report</h6>
+    <div class="stack">
+      <label class="checkbox"><input type="checkbox" value="test" checked /><span>Practice Test sessions</span></label>
+      <label class="checkbox"><input type="checkbox" value="spaced" checked /><span>Spaced repetition data/history</span></label>
+      <label class="checkbox"><input type="checkbox" value="wod" /><span>Word of the Day info</span></label>
+      <label class="checkbox"><input type="checkbox" value="duo" /><span>Duolingo current session</span></label>
+    </div>
+    <button id="generatePdfBtn" class="mt">
+      <i>picture_as_pdf</i>
+      <span>Generate PDF report</span>
+    </button>
+
     <div id="settingsStatus" class="muted"></div>
-  <p class="muted" style="margin-top:.5rem;">Version <span id="appVersion"></span></p>
+    <p class="muted small-text">Version <span id="appVersion"></span></p>
   </dialog>
 
-  <dialog id="helpDialog">
-    <button id="closeHelp" class="close" aria-label="Close">×</button>
-    <h2>Help</h2>
+  <dialog id="helpDialog" class="helpdialog">
+    <header class="fixed">
+      <nav>
+        <h5 class="max">Help</h5>
+        <button id="closeHelp" class="circle transparent" aria-label="Close">
+          <i>close</i>
+        </button>
+      </nav>
+    </header>
     <p>Explorer for the HKU Medical Terminology list. Fetches and Base64-decodes live data (no local copy).</p>
-    <p>Version <span id="version"></span> by Ricky Cheung. You are welcome to visit the <a href="https://github.com/rcky844/medical-terminology-explorer/">repository on GitHub</a>.</p>
+    <p>Version <span id="version"></span> by Ricky Cheung. You are welcome to visit the <a class="link" href="https://github.com/rcky844/medical-terminology-explorer/">repository on GitHub</a>.</p>
     <p>Open the official site for the official learning experience:</p>
-    <p><a href="https://medterms.hku.hk/" target="_blank" rel="noopener noreferrer">https://medterms.hku.hk/</a></p>
+    <p><a class="link" href="https://medterms.hku.hk/" target="_blank" rel="noopener noreferrer">https://medterms.hku.hk/</a></p>
   </dialog>
 
   <!-- Auto-generated from package.json by scripts/sync-version.js — do not edit. Defines MT_APP_VERSION for native builds (see app.js updateAppVersion). -->
   <script src="/version-generated.js"></script>
   <script src="/app.js"></script>
-  <script src="/test.js"></script>
+  <script src="/practice.js"></script>
   <script src="/duo.js"></script>
   <script src="/spaced.js"></script>
 </body>

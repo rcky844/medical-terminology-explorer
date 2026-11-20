@@ -127,43 +127,49 @@ function renderTest() {
   if (!state.test) return;
   const { sec1, sec2, oddQs } = state.test;
   let idx = 0;
-  body.insertAdjacentHTML('beforeend', '<div class="sectiontitle">Section 1: Write a definition of the following medical terms (10 points)</div>');
+  body.insertAdjacentHTML('beforeend', '<h5 class="sectiontitle small">Section 1: Write a definition of the following medical terms (10 points)</h5>');
   sec1.forEach((q, i) => {
     idx++;
-    const el = document.createElement('div');
+    const el = document.createElement('article');
     el.className = 'question';
     el.innerHTML = `
-      <h3>Q${idx} (2 marks)</h3>
-      <div class="prompt"><strong>${escapeHtml(q.term.word)}</strong></div>
-      <input type="text" class="s1input" placeholder="Your definition…" />
+      <h6>Q${idx} (2 marks)</h6>
+      <p class="prompt"><strong>${escapeHtml(q.term.word)}</strong></p>
+      <div class="field label border">
+        <input type="text" class="s1input" placeholder=" " />
+        <label>Your definition…</label>
+      </div>
       <div class="answer hidden" id="s1ans-${i}"></div>
       <div class="selfmark">
-        <label><input type="checkbox" class="selfok" /> I got this correct</label>
+        <label class="checkbox"><input type="checkbox" class="selfok" /><span>I got this correct</span></label>
       </div>`;
     body.appendChild(el);
   });
-  body.insertAdjacentHTML('beforeend', '<div class="sectiontitle">Section 2: Give the medical term for the following definitions (10 points)</div>');
+  body.insertAdjacentHTML('beforeend', '<h5 class="sectiontitle small">Section 2: Give the medical term for the following definitions (10 points)</h5>');
   sec2.forEach((q, i) => {
     idx++;
-    const el = document.createElement('div');
+    const el = document.createElement('article');
     el.className = 'question';
     el.innerHTML = `
-      <h3>Q${idx} (2 marks)</h3>
-      <div class="prompt">${q.term.meaning_uk}</div>
-      <input type="text" class="s2input" placeholder="Medical term…" />
+      <h6>Q${idx} (2 marks)</h6>
+      <p class="prompt">${q.term.meaning_uk}</p>
+      <div class="field label border">
+        <input type="text" class="s2input" placeholder=" " />
+        <label>Medical term…</label>
+      </div>
       <div class="answer hidden" id="s2ans-${i}"></div>`;
     body.appendChild(el);
   });
-  body.insertAdjacentHTML('beforeend', '<div class="sectiontitle">Section 3: Odd one out (10 questions, 2 marks each)</div>');
+  body.insertAdjacentHTML('beforeend', '<h5 class="sectiontitle small">Section 3: Odd one out (10 questions, 2 marks each)</h5>');
   oddQs.forEach((q, i) => {
     idx++;
     const optionsHtml = q.q.options.map((t) =>
-      `<button class="option" data-word="${escapeHtml(t.word)}">${escapeHtml(t.word)}</button>`).join('');
-    const el = document.createElement('div');
+      `<button class="option border" data-word="${escapeHtml(t.word)}">${escapeHtml(t.word)}</button>`).join('');
+    const el = document.createElement('article');
     el.className = 'question';
     el.innerHTML = `
-      <h3>Q${idx} (2 marks)</h3>
-      <div class="prompt">${escapeHtml(q.q.prompt)}</div>
+      <h6>Q${idx} (2 marks)</h6>
+      <p class="prompt">${escapeHtml(q.q.prompt)}</p>
       <div class="options">${optionsHtml}</div>
       <div class="answer hidden" id="s3ans-${i}"></div>`;
     body.appendChild(el);
@@ -288,15 +294,15 @@ function showSessions() {
     panel.innerHTML = 'No saved sessions yet.';
   } else {
     panel.innerHTML = list.map(sess => `
-    <div class="session">
+    <article class="session">
       <div class="sessionhead">
         <strong>${new Date(sess.createdAt).toLocaleString()}</strong>
-        <span>${sess.score}/${sess.total}${sess.timeExpired ? ' (time expired)' : ''}</span>
-        <button class="btn secondary sessdetail" data-id="${sess.id}">Details</button>
-        <button class="btn secondary sessdelete" data-id="${sess.id}">Delete</button>
+        <span class="chip">${sess.score}/${sess.total}${sess.timeExpired ? ' (time expired)' : ''}</span>
+        <button class="border small sessdetail" data-id="${sess.id}">Details</button>
+        <button class="border small sessdelete" data-id="${sess.id}">Delete</button>
       </div>
       <div class="sessitems hidden" id="sess-${sess.id}"></div>
-    </div>
+    </article>
   `).join('');
   }
   panel.querySelectorAll('.sessdetail').forEach(b => {

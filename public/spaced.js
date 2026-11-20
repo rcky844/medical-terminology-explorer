@@ -70,12 +70,12 @@ function renderSpaced() {
 
   if (spacedState.timerInterval) { clearInterval(spacedState.timerInterval); spacedState.timerInterval = null; }
   if (!spacedState.deck.length) {
-    area.innerHTML = '<div class="question"><p>No cards available.</p><button class="btn" id="srReload">Reload</button></div>';
+    area.innerHTML = '<article class="question"><p>No cards available.</p><button id="srReload"><i>refresh</i><span>Reload</span></button></article>';
     const b = $('#srReload'); if (b) b.addEventListener('click', () => { buildSpacedDeck(); renderSpaced(); });
     return;
   }
   if (spacedState.index >= spacedState.deck.length) {
-    area.innerHTML = `<div class="question"><h3>Session complete!</h3><p>Reviewed ${spacedState.deck.length} cards.</p><button class="btn" id="srReload">Load due/new cards</button></div>`;
+    area.innerHTML = `<article class="question"><h6>Session complete!</h6><p>Reviewed ${spacedState.deck.length} cards.</p><button id="srReload"><i>refresh</i><span>Load due/new cards</span></button></article>`;
     const b = $('#srReload'); if (b) b.addEventListener('click', () => { buildSpacedDeck(); renderSpaced(); });
     return;
   }
@@ -92,10 +92,10 @@ function renderSpaced() {
   const backContent = reverse ? escapeHtml(t.word) : (t.meaning_uk || t.meaning_us || '');
   const audioUrl = t.sound_uk ? mtlistAudioUrl(t.sound_uk) : (t.audio ? t.audio : null);
   area.innerHTML = `
-    <div class="flashcard">
-      <div class="flashfront">${escapeHtml(frontText)}</div>
-      ${spacedState.timed ? `<div class="muted" id="srTimer" style="text-align:center;margin:.25rem 0">Time: ${spacedState.cardSecs}s</div>` : ''}
-      <div class="srRevealWrap" style="display:flex;justify-content:center;margin:.75rem 0"><button class="btn secondary" id="srReveal">${spacedState.revealed ? 'Hide' : 'Reveal'}</button></div>
+    <article class="flashcard">
+      <h4 class="flashfront">${escapeHtml(frontText)}</h4>
+      ${spacedState.timed ? `<p class="muted center-align" id="srTimer">Time: ${spacedState.cardSecs}s</p>` : ''}
+      <div class="row center-align mt"><button class="border" id="srReveal"><i>${spacedState.revealed ? 'visibility_off' : 'visibility'}</i><span>${spacedState.revealed ? 'Hide' : 'Reveal'}</span></button></div>
       <div id="srBack" ${spacedState.revealed ? '' : 'hidden'}>
         <div class="flashback">${backContent}</div>
         ${wordPartsBlock(t)}
@@ -107,8 +107,8 @@ function renderSpaced() {
           <button class="srbtn easy" data-rating="easy">Easy</button>
         </div>
       </div>
-      <div class="muted" style="margin-top:.5rem;text-align:center">Card ${spacedState.index+1} of ${spacedState.deck.length}</div>
-    </div>`;
+      <p class="muted center-align mt">Card ${spacedState.index+1} of ${spacedState.deck.length}</p>
+    </article>`;
 
   const revealBtn = $('#srReveal');
   if (revealBtn) revealBtn.addEventListener('click', () => { spacedState.revealed = !spacedState.revealed; renderSpaced(); });
@@ -196,8 +196,8 @@ function showSpacedHistory() {
   if (!list.length) { panel.innerHTML = 'No review history yet.'; }
   else {
     panel.innerHTML = '<div class="sessions">' + list.map(h =>
-      `<div class="session"><strong>${new Date(h.time).toLocaleString()}</strong> — ${escapeHtml(h.word)} — ${escapeHtml(h.rating)}${h.timed ? ' (timed)' : ''}</div>`
-    ).join('') + '</div><div style="margin-top:.5rem"><button class="btn secondary" id="srClearHistory">Clear history</button></div>';
+      `<article class="session"><strong>${new Date(h.time).toLocaleString()}</strong> — ${escapeHtml(h.word)} — ${escapeHtml(h.rating)}${h.timed ? ' (timed)' : ''}</article>`
+    ).join('') + '</div><div class="row mt"><button class="border" id="srClearHistory"><i>delete</i><span>Clear history</span></button></div>';
   }
   const cb = $('#srClearHistory');
   if (cb) cb.addEventListener('click', () => { if (!confirm('Clear spaced-repetition history?')) return; spacedState.history = []; localStorage.removeItem('srHistory'); showSpacedHistory(); });

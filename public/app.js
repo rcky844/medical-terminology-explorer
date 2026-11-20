@@ -193,7 +193,7 @@ function wordPartsBlock(t) {
   defs('Root', 'root', t.root);
   defs('Suffix', 'suffix', t.suffix);
   if (!rows.length) return '';
-  return `<div class="wordparts"><h3>Word parts</h3><dl class="info-grid">${rows.join('')}</dl></div>`;
+  return `<div class="wordparts"><h6>Word parts</h6><dl class="info-grid">${rows.join('')}</dl></div>`;
 }
 
 /* Duplicated in renderWod() and openDetail() — shared here. */
@@ -244,29 +244,31 @@ function renderWod() {
   sec.innerHTML = `
     <div class="wodcard">
       <div class="wodhead">
-        <h2>Word of the Day</h2>
+        <h5>Word of the Day</h5>
         <div class="wodactions">
-          <input type="date" id="wodDatePicker" class="wodbtn" value="${toLocalISODate(wodViewDate)}" />
-          <button class="wodbtn" id="wodPrev">◀ Prev</button>
-          <button class="wodbtn" id="wodNext"${isToday(wodViewDate)?' disabled':''}>Next ▶</button>
-          <button class="wodbtn" id="wodToday"${isToday(wodViewDate)?' disabled':''}>Today</button>
-          <button class="wodbtn" id="wodToggle">Collapse</button>
-          <button class="wodbtn" id="wodDismiss">Dismiss today</button>
+          <div class="field border small">
+            <input type="date" id="wodDatePicker" value="${toLocalISODate(wodViewDate)}" />
+          </div>
+          <button class="wodbtn border small" id="wodPrev"><i>chevron_left</i><span>Prev</span></button>
+          <button class="wodbtn border small" id="wodNext"${isToday(wodViewDate)?' disabled':''}><i>chevron_right</i><span>Next</span></button>
+          <button class="wodbtn border small" id="wodToday"${isToday(wodViewDate)?' disabled':''}><i>today</i><span>Today</span></button>
+          <button class="wodbtn border small" id="wodToggle"><i>unfold_less</i><span>Collapse</span></button>
+          <button class="wodbtn border small" id="wodDismiss"><i>visibility_off</i><span>Dismiss today</span></button>
         </div>
       </div>
-      <div class="muted" style="margin-bottom:.5rem">${wodViewDate.toDateString()}</div>
+      <p class="muted small-text">${wodViewDate.toDateString()}</p>
       <div id="wodContent">
-        <div class="wodtitle">${escapeHtml(t.word)}</div>
+        <h4 class="wodtitle">${escapeHtml(t.word)}</h4>
         ${t.wordStress_uk ? `<div class="stress">${t.wordStress_uk}</div>` : ''}
         ${wordPartsBlock(t)}
         <div class="meaning-full">${t.meaning_uk || ''}</div>
         ${chipsBlock(t)}
         ${t.formation ? `<div><strong>Formation:</strong> ${escapeHtml(t.formation)}</div>` : ''}
         ${t.itemNoOnRevisedList ? `<div><strong>Item number on revised list:</strong> ${escapeHtml(t.itemNoOnRevisedList)}</div>` : ''}
-        ${t.sentence ? `<div style="margin-top:.5rem"><strong>Sentence example:</strong><div>${t.sentence}</div></div>` : ''}
+        ${t.sentence ? `<div class="mt"><strong>Sentence example:</strong><div>${t.sentence}</div></div>` : ''}
         <div class="media">
-          ${audioUrl ? `<div><div class="muted" style="margin-bottom:.25rem">Pronunciation</div>${audioPlayer(audioUrl)}</div>` : ''}
-          ${wodAudioSrc ? `<div><div class="muted" style="margin-bottom:.25rem">Explanation (definition + example)</div>${audioPlayer(wodAudioSrc)}</div>` : ''}
+          ${audioUrl ? `<div><p class="muted small-text">Pronunciation</p>${audioPlayer(audioUrl)}</div>` : ''}
+          ${wodAudioSrc ? `<div><p class="muted small-text">Explanation (definition + example)</p>${audioPlayer(wodAudioSrc)}</div>` : ''}
           ${imgUrl ? `<img src="${imgUrl}" alt="${escapeHtml(t.word)}" loading="lazy" />` : ''}
         </div>
       </div>
@@ -278,7 +280,9 @@ function renderWod() {
     toggle.addEventListener('click', () => {
       const hidden = content.hidden;
       content.hidden = !hidden;
-      toggle.textContent = hidden ? 'Collapse' : 'Expand';
+      toggle.innerHTML = hidden
+        ? '<i>unfold_less</i><span>Collapse</span>'
+        : '<i>unfold_more</i><span>Expand</span>';
     });
   }
   const prev = $('#wodPrev');
@@ -350,12 +354,12 @@ function renderGrid() {
     const card = document.createElement('article');
     card.className = 'card';
     card.innerHTML = `
-      <h3>${escapeHtml(t.word)}</h3>
-      <div class="meaning">${escapeHtml(stripHtml(t.meaning_uk || t.meaning_us || ''))}</div>
+      <h6>${escapeHtml(t.word)}</h6>
+      <p class="meaning">${escapeHtml(stripHtml(t.meaning_uk || t.meaning_us || ''))}</p>
       <div class="meta">
-        ${t.level ? `<span class="tag">Level ${escapeHtml(t.level)}</span>` : ''}
-        ${t.catId ? `<span class="tag">${escapeHtml(state.categories[t.catId] || ('Cat ' + t.catId))}</span>` : ''}
-        ${t.syllableNo ? `<span class="tag">${escapeHtml(t.syllableNo)} syll.</span>` : ''}
+        ${t.level ? `<span class="chip">Level ${escapeHtml(t.level)}</span>` : ''}
+        ${t.catId ? `<span class="chip">${escapeHtml(state.categories[t.catId] || ('Cat ' + t.catId))}</span>` : ''}
+        ${t.syllableNo ? `<span class="chip">${escapeHtml(t.syllableNo)} syll.</span>` : ''}
       </div>`;
     card.addEventListener('click', () => openDetail(t));
     frag.appendChild(card);
@@ -367,20 +371,50 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+/* Shared helpers used by the Duolingo and spaced-repetition modes. */
+function pick(arr, n) {
+  const copy = arr.slice();
+  const out = [];
+  while (out.length < n && copy.length) {
+    const i = Math.floor(Math.random() * copy.length);
+    out.push(copy.splice(i, 1)[0]);
+  }
+  return out;
+}
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function stressIndex(t) {
+  const html = t.wordStress_uk || t.wordStress_us;
+  if (!html) return null;
+  const m = html.match(/<strong>(.*?)<\/strong>/);
+  if (!m) return null;
+  const chunks = html.replace(/<\/?p>/g, '').split(/<\/?strong>/).filter(Boolean);
+  const idx = chunks.findIndex(c => c === m[1]);
+  return { idx, chunks: chunks.length };
+}
+
 function openDetail(t) {
   const wordStress = t.wordStress_uk || t.wordStress_us || '';
   const meaning = t.meaning_uk || t.meaning_us || '';
   const audioUrl = mtlistAudioUrl(t.sound_uk || t.sound_us);
   const imgUrl = imageAssetUrl(t.image);
 
-  let html = `<h2 class="detail-title">${escapeHtml(t.word)}</h2>`;
+  let html = `<h4 class="detail-title">${escapeHtml(t.word)}</h4>`;
   if (wordStress) html += `<div class="stress">${wordStress}</div>`;
   html += `<div class="meaning-full">${meaning}</div>`;
   html += `<dl class="info-grid">
     ${t.wordtype ? `<dt>Type</dt><dd>${escapeHtml(t.wordtype)}</dd>` : ''}
     ${t.syllableNo ? `<dt>Syllables</dt><dd>${escapeHtml(t.syllableNo)}</dd>` : ''}
-    ${t.level ? `<dt>Level</dt><dd><span class="tag">Level ${escapeHtml(t.level)}</span></dd>` : ''}
-    ${t.catId ? `<dt>Category</dt><dd><span class="tag">${escapeHtml(state.categories[t.catId] || t.catId)}</span></dd>` : ''}
+    ${t.level ? `<dt>Level</dt><dd><span class="chip">Level ${escapeHtml(t.level)}</span></dd>` : ''}
+    ${t.catId ? `<dt>Category</dt><dd><span class="chip">${escapeHtml(state.categories[t.catId] || t.catId)}</span></dd>` : ''}
   </dl>`;
   html += chipsBlock(t);
   html += wordPartsBlock(t);
@@ -407,6 +441,15 @@ $('#modeBrowser').addEventListener('click', () => {
   $('#testView').hidden = true;
   $('#duoView').hidden = true;
   $('#spacedView').hidden = true;
+});
+
+document.querySelectorAll('.navbtn').forEach((btn) => {
+  btn.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      btn.click();
+    }
+  });
 });
 
 const showWodBtn = $('#showWodBtn');
@@ -553,8 +596,8 @@ if (generatePdfBtn) generatePdfBtn.addEventListener('click', () => {
 
 function audioPlayer(url, label) {
   return `<div class="audioplayer">
-    <button type="button" class="playbtn" data-audio="${escapeHtml(url)}">▶ Play</button>
-    ${label ? `<span class="muted">${escapeHtml(label)}</span>` : ''}
+    <button type="button" class="playbtn border small" data-audio="${escapeHtml(url)}"><i>play_arrow</i><span>Play</span></button>
+    ${label ? `<span class="muted small-text">${escapeHtml(label)}</span>` : ''}
     <audio hidden preload="none" src="${escapeHtml(url)}"></audio>
   </div>`;
 }
@@ -564,9 +607,14 @@ document.addEventListener('click', (e) => {
   const container = btn.closest('.audioplayer');
   const audio = container && container.querySelector('audio');
   if (!audio) return;
-  if (audio.paused) { audio.play().catch(()=>{}); btn.textContent = '⏸ Pause'; }
-  else { audio.pause(); btn.textContent = '▶ Play'; }
-  audio.onended = () => { btn.textContent = '▶ Play'; };
+  const setLabel = (playing) => {
+    btn.innerHTML = playing
+      ? '<i>pause</i><span>Pause</span>'
+      : '<i>play_arrow</i><span>Play</span>';
+  };
+  if (audio.paused) { audio.play().catch(()=>{}); setLabel(true); }
+  else { audio.pause(); setLabel(false); }
+  audio.onended = () => { setLabel(false); };
 });
 const helpBtn = $('#helpBtn');
 if (helpBtn) helpBtn.addEventListener('click', () => { const d = $('#helpDialog'); if (d) d.showModal(); });
