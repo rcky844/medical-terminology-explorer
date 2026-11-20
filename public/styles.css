@@ -1,6 +1,7 @@
 [hidden],.hidden{display:none !important}
 header nav h6{font-size:clamp(1rem,2.5vw,1.5rem)}
-header nav.toolbar{justify-self:center}
+header{padding-block-end:.5rem}
+header nav.toolbar{justify-self:center;margin-block-start:.5rem!important}
 .card h6,.wodtitle,.detail-title,.duocard h6,.flashfront,.flashback,.sectiontitle{color:var(--primary)}
 .question h6,.wordparts h6,.stress{color:var(--tertiary)}
 .stress strong{color:var(--primary)}
