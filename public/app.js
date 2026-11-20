@@ -249,9 +249,9 @@ function renderWod() {
           <div class="field border small">
             <input type="date" id="wodDatePicker" value="${toLocalISODate(wodViewDate)}" />
           </div>
-          <button class="wodbtn border small" id="wodPrev"><i>chevron_left</i><span>Prev</span></button>
-          <button class="wodbtn border small" id="wodNext"${isToday(wodViewDate)?' disabled':''}><i>chevron_right</i><span>Next</span></button>
-          <button class="wodbtn border small" id="wodToday"${isToday(wodViewDate)?' disabled':''}><i>today</i><span>Today</span></button>
+          <button class="wodbtn circle" id="wodPrev" aria-label="Previous day" title="Previous day"><i>chevron_left</i></button>
+          <button class="wodbtn circle" id="wodToday"${isToday(wodViewDate)?' disabled':''} aria-label="Today" title="Today"><i>today</i></button>
+          <button class="wodbtn circle" id="wodNext"${isToday(wodViewDate)?' disabled':''} aria-label="Next day" title="Next day"><i>chevron_right</i></button>
           <button class="wodbtn border small" id="wodToggle"><i>unfold_less</i><span>Collapse</span></button>
           <button class="wodbtn border small" id="wodDismiss"><i>visibility_off</i><span>Dismiss today</span></button>
         </div>
