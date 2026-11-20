@@ -838,7 +838,7 @@ if (fullZipBtn) fullZipBtn.addEventListener('click', () => exportAssetsZip(true)
 const nativeZoomGuard = isNativePlatform();
 if (nativeZoomGuard) {
   const vp = document.querySelector('meta[name="viewport"]');
-  if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
+  if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
 }
 
 /* Version display. Single source of truth is package.json:

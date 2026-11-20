@@ -1,6 +1,8 @@
 [hidden],.hidden{display:none !important}
+:root{--safe-area-top:env(safe-area-inset-top,0px);--safe-area-bottom:env(safe-area-inset-bottom,0px)}
+body{padding-block-end:var(--safe-area-bottom)}
 header nav h6{font-size:clamp(1rem,2.5vw,1.5rem)}
-header{padding-block-end:.5rem}
+header{padding-block-start:max(var(--safe-area-top),.25rem);padding-block-end:.5rem}
 header nav.toolbar{justify-self:center;margin-block-start:.5rem!important}
 .card h6,.wodtitle,.detail-title,.duocard h6,.flashfront,.flashback,.sectiontitle{color:var(--primary)}
 .question h6,.wordparts h6,.stress{color:var(--tertiary)}
@@ -74,7 +76,7 @@ dialog[open]::backdrop{opacity:1;visibility:visible}
 .confetti-container{position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden}
 .confetti{position:absolute;top:-12px;inline-size:10px;block-size:14px;border-radius:2px;animation:confetti-fall 3s ease-out forwards}
 @keyframes confetti-fall{to{transform:translateY(110vh) rotate(720deg);opacity:0}}
-#backToTop{position:fixed;inset-block-end:1.5rem;inset-inline-end:1.5rem;z-index:50;opacity:0;visibility:hidden;transform:translateY(1rem);transition:opacity var(--speed2),transform var(--speed2),visibility var(--speed2)}
+#backToTop{position:fixed;inset-block-end:calc(1.5rem + var(--safe-area-bottom));inset-inline-end:1.5rem;z-index:50;opacity:0;visibility:hidden;transform:translateY(1rem);transition:opacity var(--speed2),transform var(--speed2),visibility var(--speed2)}
 #backToTop.visible{opacity:1;visibility:visible;transform:none}
 @media (max-width:600px){header nav.toolbar a span{display:none}}
 @media (min-width:601px){.spacedhead{display:grid;grid-template-columns:1fr auto;align-items:center}.spacedhead h5{grid-column:1}.spacedactions{grid-column:2;justify-self:end}.spaceddecks{grid-column:1/-1;align-items:center}.spaceddecks #spacedStats{margin-block:0;margin-inline-start:auto}}
