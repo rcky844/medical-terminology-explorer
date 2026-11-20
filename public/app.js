@@ -265,7 +265,7 @@ function renderWod() {
         ${chipsBlock(t)}
         ${t.formation ? `<div><strong>Formation:</strong> ${escapeHtml(t.formation)}</div>` : ''}
         ${t.itemNoOnRevisedList ? `<div><strong>Item number on revised list:</strong> ${escapeHtml(t.itemNoOnRevisedList)}</div>` : ''}
-        ${t.sentence ? `<div class="mt"><strong>Sentence example:</strong><div>${t.sentence}</div></div>` : ''}
+        ${t.sentence ? `<div class="mt"><strong>Sentence example:</strong><div class="sentence-html">${t.sentence}</div></div>` : ''}
         <div class="media">
           ${audioUrl ? `<div><p class="muted small-text">Pronunciation</p>${audioPlayer(audioUrl)}</div>` : ''}
           ${wodAudioSrc ? `<div><p class="muted small-text">Explanation (definition + example)</p>${audioPlayer(wodAudioSrc)}</div>` : ''}
