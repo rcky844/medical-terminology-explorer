@@ -42,7 +42,7 @@
 #sessionsDialog,#spacedHistoryDialog{inline-size:min(50rem,95vw)}
 .detail-dialog,.settings-dialog,.helpdialog,#sessionsDialog,#spacedHistoryDialog,.celebrate{max-block-size:85vh}
 .celebrate{inline-size:min(26rem,95vw);text-align:center}
-dialog>header.fixed{z-index:2}
+dialog>header.fixed{z-index:2}.overlay.active,dialog::backdrop{-webkit-backdrop-filter:blur(1rem);backdrop-filter:blur(1rem)}dialog[open]::backdrop{opacity:1;visibility:visible}
 .duomenu,.duoarea,.spacedarea{margin-block-start:1rem}
 .duocards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
 :is(button,.button).duocard{display:block;block-size:auto;padding:1rem;text-align:start;background-color:var(--surface-container-low);color:var(--on-surface);border:.0625rem solid var(--outline-variant);border-radius:.75rem;box-shadow:var(--elevate1)}
