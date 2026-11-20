@@ -1,4 +1,6 @@
-[hidden],.hidden{display:none !important}header nav h6{font-size:clamp(1rem,2.5vw,1.5rem)}header nav.toolbar{justify-self:center}
+[hidden],.hidden{display:none !important}
+header nav h6{font-size:clamp(1rem,2.5vw,1.5rem)}
+header nav.toolbar{justify-self:center}
 .card h6,.wodtitle,.detail-title,.duocard h6,.flashfront,.flashback,.sectiontitle{color:var(--primary)}
 .question h6,.wordparts h6,.stress{color:var(--tertiary)}
 .stress strong{color:var(--primary)}
@@ -42,7 +44,9 @@
 #sessionsDialog,#spacedHistoryDialog{inline-size:min(50rem,95vw)}
 .detail-dialog,.settings-dialog,.helpdialog,#sessionsDialog,#spacedHistoryDialog,.celebrate{max-block-size:85vh}
 .celebrate{inline-size:min(26rem,95vw);text-align:center}
-dialog>header.fixed{z-index:2}.overlay.active,dialog::backdrop{-webkit-backdrop-filter:blur(1rem);backdrop-filter:blur(1rem)}dialog[open]::backdrop{opacity:1;visibility:visible}
+dialog>header.fixed{z-index:2}
+.overlay.active,dialog::backdrop{-webkit-backdrop-filter:blur(1rem);backdrop-filter:blur(1rem)}
+dialog[open]::backdrop{opacity:1;visibility:visible}
 .duomenu,.duoarea,.spacedarea{margin-block-start:1rem}
 .duocards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
 :is(button,.button).duocard{display:block;block-size:auto;padding:1rem;text-align:start;background-color:var(--surface-container-low);color:var(--on-surface);border:.0625rem solid var(--outline-variant);border-radius:.75rem;box-shadow:var(--elevate1)}
@@ -70,4 +74,4 @@ dialog>header.fixed{z-index:2}.overlay.active,dialog::backdrop{-webkit-backdrop-
 .confetti{position:absolute;top:-12px;inline-size:10px;block-size:14px;border-radius:2px;animation:confetti-fall 3s ease-out forwards}
 @keyframes confetti-fall{to{transform:translateY(110vh) rotate(720deg);opacity:0}}
 @media (max-width:600px){header nav.toolbar a span{display:none}}
-
+@media (min-width:601px){.spacedhead{display:grid;grid-template-columns:1fr auto;align-items:center}.spacedhead h5{grid-column:1}.spacedactions{grid-column:2;justify-self:end}.spaceddecks{grid-column:1/-1;align-items:center}.spaceddecks #spacedStats{margin-block:0;margin-inline-start:auto}}

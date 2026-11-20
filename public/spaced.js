@@ -66,7 +66,11 @@ function renderSpaced() {
   const { due } = srDueTerms(spacedState.deckKind);
   const learned = Object.keys(spacedState.data).filter(k => spacedState.data[k].box >= 3).length;
   const tracked = Object.keys(spacedState.data).length;
-  if (stats) stats.textContent = `Cards: ${tracked} • Learned: ${learned} • Due: ${due.length} • Session: ${spacedState.deck.length}`;
+  if (stats) stats.innerHTML = `
+    <span class="chip">Cards: ${tracked}</span>
+    <span class="chip">Learned: ${learned}</span>
+    <span class="chip">Due: ${due.length}</span>
+    <span class="chip">Session: ${spacedState.deck.length}</span>`;
 
   if (spacedState.timerInterval) { clearInterval(spacedState.timerInterval); spacedState.timerInterval = null; }
   if (!spacedState.deck.length) {
@@ -223,7 +227,7 @@ async function exportAnkiTxt() {
       if (!FS) throw new Error('Filesystem plugin unavailable');
       const result = await FS.writeFile({ path: filename, data: text, directory: 'DOCUMENTS', encoding: 'utf8' });
       if (Share && result && result.uri) await Share.share({ title: 'MT Explorer Anki', url: result.uri, dialogTitle: 'Save/export Anki txt' });
-      const st = $('#spacedStats'); if (st) st.textContent = `Exported ${lines.length} cards to ${filename}.`;
+      const st = $('#spacedStats'); if (st) st.innerHTML = `<span class="chip">Exported ${lines.length} cards to ${escapeHtml(filename)}</span>`;
       return;
     } catch (e) {
       alert('Native export failed: ' + e.message);
