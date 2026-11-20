@@ -621,6 +621,23 @@ if (helpBtn) helpBtn.addEventListener('click', () => { const d = $('#helpDialog'
 const closeHelp = $('#closeHelp');
 if (closeHelp) closeHelp.addEventListener('click', () => { const d = $('#helpDialog'); if (d) d.close(); });
 
+/* Blue source colour drives Beer's Material 3 palette, including surfaces/background. */
+function applyDynamicColours() {
+  if (typeof materialDynamicColors !== 'function') return;
+  const toVar = (name) => '--' + name.replace(/[A-Z]/g, c => '-' + c.toLowerCase());
+  const declarations = (scheme) => Object.entries(scheme)
+    .map(([key, value]) => `${toVar(key)}:${value}`)
+    .join(';');
+  materialDynamicColors('#38bdf8').then((colours) => {
+    if (!colours || !colours.light || !colours.dark) return;
+    const style = document.createElement('style');
+    style.textContent = `:root,body.light{${declarations(colours.light)}}body.dark{${declarations(colours.dark)}}`;
+    document.head.appendChild(style);
+  }).catch(() => {});
+}
+if (document.readyState === 'complete') applyDynamicColours();
+else window.addEventListener('load', applyDynamicColours, { once: true });
+
 /* Floating back-to-top button */
 const backToTop = $('#backToTop');
 if (backToTop) {
