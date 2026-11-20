@@ -621,6 +621,20 @@ if (helpBtn) helpBtn.addEventListener('click', () => { const d = $('#helpDialog'
 const closeHelp = $('#closeHelp');
 if (closeHelp) closeHelp.addEventListener('click', () => { const d = $('#helpDialog'); if (d) d.close(); });
 
+/* Floating back-to-top button */
+const backToTop = $('#backToTop');
+if (backToTop) {
+  const scroller = document.scrollingElement || document.documentElement;
+  const updateBackToTop = () => {
+    backToTop.classList.toggle('visible', scroller.scrollTop > 600);
+  };
+  window.addEventListener('scroll', updateBackToTop, { passive: true });
+  updateBackToTop();
+  backToTop.addEventListener('click', () => {
+    scroller.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
 /* Offline assets */
 const offlineModeCheckbox = $('#offlineMode');
 const isDesktopApp = !!(window && window.process && window.process.type) || /Electron/i.test(navigator.userAgent || '');
