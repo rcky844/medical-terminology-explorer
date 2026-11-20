@@ -2,7 +2,8 @@
 :root{--safe-area-top:env(safe-area-inset-top,0px);--safe-area-bottom:env(safe-area-inset-bottom,0px)}
 body{padding-block-end:var(--safe-area-bottom)}
 header nav h6{font-size:clamp(1rem,2.5vw,1.5rem)}
-header{padding-block-start:max(var(--safe-area-top),.25rem);padding-block-end:.5rem}
+body>header{padding-block-start:max(var(--safe-area-top),.25rem);padding-block-end:.5rem}
+dialog>header{padding-block-end:.5rem}
 header nav.toolbar{justify-self:center;margin-block-start:.5rem!important}
 .card h6,.wodtitle,.detail-title,.duocard h6,.flashfront,.flashback,.sectiontitle{color:var(--primary)}
 .question h6,.wordparts h6,.stress{color:var(--tertiary)}
