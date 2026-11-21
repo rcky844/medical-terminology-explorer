@@ -308,6 +308,8 @@ function renderWod() {
 }
 
 /* ---------- browse ---------- */
+let activeSyllable = '';
+
 function populateFilters() {
   const levelSel = $('#levelFilter');
   const catSel = $('#catFilter');
@@ -336,6 +338,7 @@ function applyFilters() {
   state.filtered = state.terms.filter(t => {
     if (level && t.level !== level) return false;
     if (cat && t.catId !== cat) return false;
+    if (activeSyllable && String(t.syllableNo || '') !== activeSyllable) return false;
     // t._hay (lowercase search text) is precomputed once in load().
     return !q || (t._hay || '').includes(q);
   });
@@ -355,6 +358,7 @@ function renderGrid() {
   state.filtered.forEach(t => {
     const level = t.level ? String(t.level) : '';
     const cat = t.catId ? String(t.catId) : '';
+    const syll = t.syllableNo ? String(t.syllableNo) : '';
     const catName = cat ? (state.categories[cat] || ('Cat ' + cat)) : '';
     const card = document.createElement('article');
     card.className = 'card';
@@ -364,13 +368,17 @@ function renderGrid() {
       <div class="meta">
         ${level ? `<button type="button" class="chip chip-filter${level === activeLevel ? ' active' : ''}" data-filter="level" data-value="${escapeHtml(level)}" title="Filter by level ${escapeHtml(level)}">Level ${escapeHtml(level)}</button>` : ''}
         ${cat ? `<button type="button" class="chip chip-filter${cat === activeCat ? ' active' : ''}" data-filter="cat" data-value="${escapeHtml(cat)}" title="Filter by ${escapeHtml(catName)}">${escapeHtml(catName)}</button>` : ''}
-        ${t.syllableNo ? `<span class="chip">${escapeHtml(t.syllableNo)} syll.</span>` : ''}
+        ${syll ? `<button type="button" class="chip chip-filter${syll === activeSyllable ? ' active' : ''}" data-filter="syll" data-value="${escapeHtml(syll)}" title="Filter by ${escapeHtml(syll)} syllables">${escapeHtml(syll)} syll.</button>` : ''}
       </div>`;
     card.querySelectorAll('.chip-filter').forEach(chip => {
       chip.addEventListener('click', (e) => {
         e.stopPropagation();
-        const sel = chip.dataset.filter === 'level' ? $('#levelFilter') : $('#catFilter');
-        sel.value = sel.value === chip.dataset.value ? '' : chip.dataset.value;
+        if (chip.dataset.filter === 'syll') {
+          activeSyllable = activeSyllable === chip.dataset.value ? '' : chip.dataset.value;
+        } else {
+          const sel = chip.dataset.filter === 'level' ? $('#levelFilter') : $('#catFilter');
+          sel.value = sel.value === chip.dataset.value ? '' : chip.dataset.value;
+        }
         applyFilters();
       });
     });
