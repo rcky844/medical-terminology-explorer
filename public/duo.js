@@ -197,6 +197,7 @@ function renderMatching() {
   const area = $('#duoArea');
   let selectedTerm = null;
   let matched = 0;
+  let hadMistake = false;
   const total = sample.length;
 
   function html() {
@@ -223,10 +224,11 @@ function renderMatching() {
         updateDuoStats();
         if (matched === total) {
           const ans = $('#duoAns'); if (ans) { ans.classList.remove('hidden'); ans.innerHTML = 'All matched! +10 each'; }
-          setTimeout(() => { duoState.qi += 1; renderDuoQuestion(); }, 1200);
+          duoAdvance(!hadMistake, 1200);
         }
       } else {
         btn.classList.add('wrong');
+        hadMistake = true;
         duoState.streak = 0;
         updateDuoStats();
         setTimeout(() => btn.classList.remove('wrong'), 600);
@@ -269,6 +271,8 @@ function renderForming() {
   if (check) check.addEventListener('click', checkForming);
 }
 function checkForming() {
+  const shown = $('#duoAns');
+  if (shown && !shown.classList.contains('hidden')) return;
   const q = duoState.current;
   const correct = q.user.length === q.target.length && q.user.every((v, i) => v === q.target[i]);
   const area = $('#duoArea');
@@ -283,7 +287,7 @@ function checkForming() {
     if (ans) { ans.classList.remove('hidden'); ans.innerHTML = 'Answer: ' + escapeHtml(q.target.join(' + ')); }
   }
   updateDuoStats();
-  setTimeout(() => { duoState.qi += 1; renderDuoQuestion(); }, 1200);
+  duoAdvance(correct, 1200);
 }
 
 function wordleColors(guess, answer) {
@@ -361,7 +365,7 @@ function renderWordle() {
         const a2 = $('#duoAns');
         if (a2) { a2.classList.remove('hidden'); a2.innerHTML = correct ? 'Correct! +10' : `Answer: ${escapeHtml(q.answer.toUpperCase())}`; }
         updateDuoStats();
-        setTimeout(() => { duoState.qi += 1; renderDuoQuestion(); }, 1400);
+        duoAdvance(correct, 1400);
       } else {
         renderWordle();
       }
@@ -371,15 +375,37 @@ function renderWordle() {
   }
 }
 
+// Correct answers auto-advance as before. Wrong answers wait for the user to
+// click "Continue" so the feedback stays on screen for review.
+function duoAdvance(correct, delay) {
+  if (correct) {
+    setTimeout(() => { duoState.qi += 1; renderDuoQuestion(); }, delay);
+    return;
+  }
+  if ($('#duoContinue')) return;
+  const ans = $('#duoAns');
+  const host = ans ? ans.parentElement : $('#duoArea');
+  if (!host) return;
+  const btn = document.createElement('button');
+  btn.id = 'duoContinue';
+  btn.className = 'border mt';
+  btn.innerHTML = '<i>arrow_forward</i><span>Continue</span>';
+  host.appendChild(btn);
+  btn.onclick = () => { duoState.qi += 1; renderDuoQuestion(); };
+  btn.focus();
+}
+
 function finishDuoAnswer(correct, answerText) {
   const area = $('#duoArea');
+  const shown = $('#duoAns');
+  if (shown && !shown.classList.contains('hidden')) return;
   area.querySelectorAll('.option').forEach(b => b.style.pointerEvents = 'none');
   if (correct) { duoState.score += 10; duoState.streak += 1; if (duoState.streak % 5 === 0) launchConfetti(); }
   else { duoState.streak = 0; }
   const ans = $('#duoAns');
   if (ans) { ans.classList.remove('hidden'); ans.innerHTML = correct ? 'Correct! +10' : `Answer: ${escapeHtml(answerText)}`; }
   updateDuoStats();
-  setTimeout(() => { duoState.qi += 1; renderDuoQuestion(); }, 900);
+  duoAdvance(correct, 900);
 }
 
 function answerFinding(btn, correctWord) {
@@ -410,14 +436,20 @@ function areaMarkCorrect(attr, val) {
   });
 }
 function checkDuoSpelling(q) {
-  const val = ($('#duoSpell')?.value || '').trim().toLowerCase();
+  const shown = $('#duoAns');
+  if (shown && !shown.classList.contains('hidden')) return;
+  const spellInput = $('#duoSpell');
+  const spellBtn = $('#duoSpellBtn');
+  if (spellInput) spellInput.disabled = true;
+  if (spellBtn) spellBtn.disabled = true;
+  const val = (spellInput?.value || '').trim().toLowerCase();
   const correct = val === q.term.word.toLowerCase();
   const ans = $('#duoAns');
   if (ans) { ans.classList.remove('hidden'); ans.innerHTML = correct ? 'Correct! +10' : `Correct: <strong>${escapeHtml(q.term.word)}</strong>`; }
   if (correct) { duoState.score += 10; duoState.streak += 1; if (duoState.streak % 5 === 0) launchConfetti(); }
   else { duoState.streak = 0; }
   updateDuoStats();
-  setTimeout(() => { duoState.qi += 1; renderDuoQuestion(); }, 1100);
+  duoAdvance(correct, 1100);
 }
 
 
