@@ -1,5 +1,6 @@
 /* ---------------- Duolingo Mode ---------------- */
 const duoState = { score: 0, streak: 0, kind: null, questions: [], qi: 0, current: null };
+const DUO_POINTS = { choosing: 10, finding: 10, guessing: 10, forming: 20, wordle: 50, spelling: 30, matching: 40 };
 
 function duoShowMenu() {
   duoState.kind = null;
@@ -7,14 +8,14 @@ function duoShowMenu() {
   const menu = $('#duoMenu');
   menu.innerHTML = `
     <div class="duocards">
-      <button class="duocard" data-kind="choosing"><h6>Choosing</h6><p>Find the correct suffix / root / prefix</p><span class="chip">+10 pts</span></button>
-      <button class="duocard" data-kind="finding"><h6>Finding</h6><p>Find the correct word/meaning</p><span class="chip">+10 pts</span></button>
-      <button class="duocard" data-kind="guessing"><h6>Guessing</h6><p>Guess the stressed part or number of syllables</p><span class="chip">+10 pts</span></button>
-      <button class="duocard" data-kind="forming"><h6>Forming</h6><p>Form the word from its roots</p><span class="chip">+10 pts</span></button>
-      <button class="duocard" data-kind="wordle"><h6>Wordle</h6><p>Guess the hidden word</p><span class="chip">+10 pts</span></button>
-      <button class="duocard" data-kind="spelling"><h6>Spelling</h6><p>Listen and fill the answer</p><span class="chip">+10 pts</span></button>
-      <button class="duocard" data-kind="matching"><h6>Matching</h6><p>Match the meaning of a thematic group</p><span class="chip">+10 pts</span></button>
-      <button class="duocard" data-kind="mixed"><h6>Mixed</h6><p>All types combined</p><span class="chip">+10 pts</span></button>
+      <button class="duocard" data-kind="choosing"><h6>Choosing</h6><p>Find the correct suffix / root / prefix</p><span class="chip">+${DUO_POINTS.choosing} pts</span></button>
+      <button class="duocard" data-kind="finding"><h6>Finding</h6><p>Find the correct word/meaning</p><span class="chip">+${DUO_POINTS.finding} pts</span></button>
+      <button class="duocard" data-kind="guessing"><h6>Guessing</h6><p>Guess the stressed part or number of syllables</p><span class="chip">+${DUO_POINTS.guessing} pts</span></button>
+      <button class="duocard" data-kind="forming"><h6>Forming</h6><p>Form the word from its roots</p><span class="chip">+${DUO_POINTS.forming} pts</span></button>
+      <button class="duocard" data-kind="wordle"><h6>Wordle</h6><p>Guess the hidden word</p><span class="chip">+${DUO_POINTS.wordle} pts</span></button>
+      <button class="duocard" data-kind="spelling"><h6>Spelling</h6><p>Listen and fill the answer</p><span class="chip">+${DUO_POINTS.spelling} pts</span></button>
+      <button class="duocard" data-kind="matching"><h6>Matching</h6><p>Match the meaning of a thematic group</p><span class="chip">+${DUO_POINTS.matching} pts</span></button>
+      <button class="duocard" data-kind="mixed"><h6>Mixed</h6><p>All types combined</p><span class="chip">+${DUO_POINTS.choosing}-${DUO_POINTS.matching} pts</span></button>
     </div>`;
   menu.querySelectorAll('.duocard').forEach(b => b.addEventListener('click', () => startDuo(b.dataset.kind)));
   updateDuoStats();
@@ -28,11 +29,15 @@ function updateDuoStats() {
 function buildDuoQuestions(kind, n=8) {
   const terms = state.terms.filter(t => t.word && (t.meaning_uk || t.meaning_us));
   const qs = [];
-  const kinds = kind === 'mixed' ? ['choosing','finding','guessing','forming','wordle','spelling'] : [kind];
+  const kinds = kind === 'mixed' ? ['choosing','finding','guessing','forming','matching','spelling'] : [kind];
   let guard = 0;
   while (qs.length < n && guard++ < n*80) {
     const k = kinds[Math.floor(Math.random()*kinds.length)];
-    if (k === 'spelling') {
+    if (k === 'matching') {
+      // Mix in at most one matching round.
+      if (qs.some(q => q.kind === 'matching')) continue;
+      qs.push({ kind: 'matching' });
+    } else if (k === 'spelling') {
       const t = terms[Math.floor(Math.random()*terms.length)];
       if (!t.sound_uk) continue;
       qs.push({ kind:'spelling', term: t });
@@ -219,11 +224,12 @@ function renderMatching() {
       if (defId === selectedTerm) {
         area.querySelectorAll(`[data-id="${CSS.escape(selectedTerm)}"]`).forEach(b => { b.classList.remove('selected'); b.classList.add('matched'); b.disabled = true; });
         matched += 1;
-        duoState.score += 10;
         duoState.streak += 1;
         updateDuoStats();
         if (matched === total) {
-          const ans = $('#duoAns'); if (ans) { ans.classList.remove('hidden'); ans.innerHTML = 'All matched! +10 each'; }
+          duoState.score += DUO_POINTS.matching;
+          const ans = $('#duoAns'); if (ans) { ans.classList.remove('hidden'); ans.innerHTML = `All matched! +${DUO_POINTS.matching}`; }
+          updateDuoStats();
           duoAdvance(!hadMistake, 1200);
         }
       } else {
@@ -279,9 +285,9 @@ function checkForming() {
   area.querySelectorAll('button').forEach(b => b.style.pointerEvents = 'none');
   const ans = $('#duoAns');
   if (correct) {
-    duoState.score += 10; duoState.streak += 1;
+    duoState.score += DUO_POINTS.forming; duoState.streak += 1;
     if (duoState.streak % 5 === 0) launchConfetti();
-    if (ans) { ans.classList.remove('hidden'); ans.innerHTML = 'Correct! +10'; }
+    if (ans) { ans.classList.remove('hidden'); ans.innerHTML = `Correct! +${DUO_POINTS.forming}`; }
   } else {
     duoState.streak = 0;
     if (ans) { ans.classList.remove('hidden'); ans.innerHTML = 'Answer: ' + escapeHtml(q.target.join(' + ')); }
@@ -359,11 +365,11 @@ function renderWordle() {
       q.guesses.push(val);
       if (val === q.answer || q.guesses.length >= total) {
         const correct = q.guesses.includes(q.answer);
-        if (correct) { duoState.score += 10; duoState.streak += 1; if (duoState.streak % 5 === 0) launchConfetti(); }
+        if (correct) { duoState.score += DUO_POINTS.wordle; duoState.streak += 1; if (duoState.streak % 5 === 0) launchConfetti(); }
         else { duoState.streak = 0; }
         renderWordle();
         const a2 = $('#duoAns');
-        if (a2) { a2.classList.remove('hidden'); a2.innerHTML = correct ? 'Correct! +10' : `Answer: ${escapeHtml(q.answer.toUpperCase())}`; }
+        if (a2) { a2.classList.remove('hidden'); a2.innerHTML = correct ? `Correct! +${DUO_POINTS.wordle}` : `Answer: ${escapeHtml(q.answer.toUpperCase())}`; }
         updateDuoStats();
         duoAdvance(correct, 1400);
       } else {
@@ -400,10 +406,11 @@ function finishDuoAnswer(correct, answerText) {
   const shown = $('#duoAns');
   if (shown && !shown.classList.contains('hidden')) return;
   area.querySelectorAll('.option').forEach(b => b.style.pointerEvents = 'none');
-  if (correct) { duoState.score += 10; duoState.streak += 1; if (duoState.streak % 5 === 0) launchConfetti(); }
+  const pts = DUO_POINTS[duoState.current.kind] || 10;
+  if (correct) { duoState.score += pts; duoState.streak += 1; if (duoState.streak % 5 === 0) launchConfetti(); }
   else { duoState.streak = 0; }
   const ans = $('#duoAns');
-  if (ans) { ans.classList.remove('hidden'); ans.innerHTML = correct ? 'Correct! +10' : `Answer: ${escapeHtml(answerText)}`; }
+  if (ans) { ans.classList.remove('hidden'); ans.innerHTML = correct ? `Correct! +${pts}` : `Answer: ${escapeHtml(answerText)}`; }
   updateDuoStats();
   duoAdvance(correct, 900);
 }
@@ -445,8 +452,8 @@ function checkDuoSpelling(q) {
   const val = (spellInput?.value || '').trim().toLowerCase();
   const correct = val === q.term.word.toLowerCase();
   const ans = $('#duoAns');
-  if (ans) { ans.classList.remove('hidden'); ans.innerHTML = correct ? 'Correct! +10' : `Correct: <strong>${escapeHtml(q.term.word)}</strong>`; }
-  if (correct) { duoState.score += 10; duoState.streak += 1; if (duoState.streak % 5 === 0) launchConfetti(); }
+  if (ans) { ans.classList.remove('hidden'); ans.innerHTML = correct ? `Correct! +${DUO_POINTS.spelling}` : `Correct: <strong>${escapeHtml(q.term.word)}</strong>`; }
+  if (correct) { duoState.score += DUO_POINTS.spelling; duoState.streak += 1; if (duoState.streak % 5 === 0) launchConfetti(); }
   else { duoState.streak = 0; }
   updateDuoStats();
   duoAdvance(correct, 1100);
