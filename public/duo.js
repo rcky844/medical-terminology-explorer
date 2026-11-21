@@ -24,6 +24,7 @@ function duoShowMenu() {
 function updateDuoStats() {
   const sc = $('#duoScore'); if (sc) sc.textContent = `Score: ${duoState.score}`;
   const st = $('#duoStreak'); if (st) st.textContent = `Streak: ${duoState.streak}`;
+  const mode = $('#duoMode'); if (mode) mode.hidden = duoState.kind !== 'mixed';
 }
 
 function buildDuoQuestions(kind, n=8) {
