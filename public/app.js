@@ -349,19 +349,32 @@ function renderGrid() {
     grid.innerHTML = '<p class="status">No matching terms.</p>';
     return;
   }
+  const activeLevel = String($('#levelFilter').value);
+  const activeCat = String($('#catFilter').value);
   const frag = document.createDocumentFragment();
   state.filtered.forEach(t => {
+    const level = t.level ? String(t.level) : '';
+    const cat = t.catId ? String(t.catId) : '';
+    const catName = cat ? (state.categories[cat] || ('Cat ' + cat)) : '';
     const card = document.createElement('article');
     card.className = 'card';
     card.innerHTML = `
       <h6>${escapeHtml(t.word)}</h6>
       <p class="meaning">${escapeHtml(stripHtml(t.meaning_uk || t.meaning_us || ''))}</p>
       <div class="meta">
-        ${t.level ? `<span class="chip">Level ${escapeHtml(t.level)}</span>` : ''}
-        ${t.catId ? `<span class="chip">${escapeHtml(state.categories[t.catId] || ('Cat ' + t.catId))}</span>` : ''}
+        ${level ? `<button type="button" class="chip chip-filter${level === activeLevel ? ' active' : ''}" data-filter="level" data-value="${escapeHtml(level)}" title="Filter by level ${escapeHtml(level)}">Level ${escapeHtml(level)}</button>` : ''}
+        ${cat ? `<button type="button" class="chip chip-filter${cat === activeCat ? ' active' : ''}" data-filter="cat" data-value="${escapeHtml(cat)}" title="Filter by ${escapeHtml(catName)}">${escapeHtml(catName)}</button>` : ''}
         ${t.syllableNo ? `<span class="chip">${escapeHtml(t.syllableNo)} syll.</span>` : ''}
       </div>`;
-    card.addEventListener('click', () => openDetail(t));
+    card.querySelectorAll('.chip-filter').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const sel = chip.dataset.filter === 'level' ? $('#levelFilter') : $('#catFilter');
+        sel.value = sel.value === chip.dataset.value ? '' : chip.dataset.value;
+        applyFilters();
+      });
+    });
+    card.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('.chip-filter')) return; openDetail(t); });
     frag.appendChild(card);
   });
   grid.appendChild(frag);

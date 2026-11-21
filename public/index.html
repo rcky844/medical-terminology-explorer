@@ -45,18 +45,20 @@
     <section id="browserView">
       <section id="wodSection" class="wod" hidden></section>
       <div class="filterbar">
-        <div class="field label prefix border round max">
-          <i>search</i>
-          <input id="search" type="search" placeholder=" " autocomplete="off" />
-          <label>Search term, meaning, root, prefix…</label>
-        </div>
-        <div class="field label border">
-          <select id="levelFilter"><option value="">All levels</option></select>
-          <label>Level</label>
-        </div>
-        <div class="field label border">
-          <select id="catFilter"><option value="">All categories</option></select>
-          <label>Category</label>
+        <div class="filter-fields">
+          <div class="field label prefix border round max">
+            <i>search</i>
+            <input id="search" type="search" placeholder=" " autocomplete="off" />
+            <label>Search term, meaning, root, prefix…</label>
+          </div>
+          <div class="field label border round">
+            <select id="levelFilter"><option value="">All levels</option></select>
+            <label>Level</label>
+          </div>
+          <div class="field label border round">
+            <select id="catFilter"><option value="">All categories</option></select>
+            <label>Category</label>
+          </div>
         </div>
         <button id="showWodBtn" class="border" hidden>
           <i>today</i>

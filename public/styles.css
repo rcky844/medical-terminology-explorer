@@ -13,7 +13,9 @@ header nav.toolbar{justify-self:center;margin-block-start:.5rem!important}
 .chip-root{background-color:var(--secondary-container);color:var(--on-secondary-container);border-color:transparent}
 .chip-suffix{background-color:var(--tertiary-container);color:var(--on-tertiary-container);border-color:transparent}
 .filterbar{display:flex;flex-wrap:wrap;align-items:center;gap:.75rem;margin-block:1rem}
-.filterbar .field{min-inline-size:10rem}
+.filter-fields{display:flex;flex:1 1 auto;flex-wrap:wrap;align-items:stretch;gap:.75rem;min-inline-size:0}
+/* BeerCSS adds a 1rem top margin to sibling fields; keep the filter row level. */
+.filterbar .field{min-inline-size:10rem;margin-block-start:0!important}
 .filterbar .field.max{flex:1 1 18rem}
 .filterbar .count{margin-inline-start:auto}
 .count,.muted{color:var(--on-surface-variant)}
@@ -25,6 +27,9 @@ header nav.toolbar{justify-self:center;margin-block-start:.5rem!important}
 .card{cursor:pointer}
 .card h6{font-size:1.125rem;overflow-wrap:anywhere}
 .card .meta{display:flex;flex-wrap:wrap;gap:.35rem;margin-block-start:.5rem}
+.card .meta .chip-filter{cursor:pointer}
+.chip-filter:hover,.chip-filter:focus-visible{border-color:var(--primary);color:var(--primary)}
+.chip-filter.active{background-color:var(--primary-container);color:var(--on-primary-container);border-color:var(--primary)}
 .testhead,.sectionhead,.wodhead,.wodactions,.options,.inline-form,.sr-buttons,.spacedactions,.spaceddecks,.audioplayer,.sessions,.sessionhead,.stack{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem}
 .testhead,.sectionhead,.wodhead{margin-block-end:.5rem}
 .testhead .count{white-space:nowrap}
