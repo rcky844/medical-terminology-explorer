@@ -66,8 +66,9 @@ dialog[open]::backdrop{opacity:1;visibility:visible}
 .wlgrid{display:grid;gap:.25rem;justify-content:center}
 .wlrow{display:flex;gap:.25rem;justify-content:center}
 .wltile{inline-size:2.5rem;block-size:2.5rem;display:inline-flex;align-items:center;justify-content:center;border:.0625rem solid var(--outline);border-radius:.35rem;background-color:var(--surface-container)}
-.wltile.correct{background-color:var(--primary);color:var(--on-primary);border-color:var(--primary)}
-.wltile.present{background-color:var(--tertiary);color:var(--on-tertiary);border-color:var(--tertiary)}
+/* Wordle keeps its classic green / yellow result colours. */
+.wltile.correct{background-color:#6aaa64;color:#fff;border-color:#6aaa64}
+.wltile.present{background-color:#c9b458;color:#fff;border-color:#c9b458}
 .wltile.absent{background-color:var(--surface-container-highest);color:var(--on-surface-variant);border-color:var(--surface-container-highest)}
 .wltile.empty{background-color:transparent}
 .spacedhead button{--_size:2rem;font-size:.8rem}
