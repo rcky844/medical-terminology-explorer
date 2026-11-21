@@ -462,6 +462,7 @@ $('#modeBrowser').addEventListener('click', () => {
   $('#testView').hidden = true;
   $('#duoView').hidden = true;
   $('#spacedView').hidden = true;
+  resetTest();
 });
 
 document.querySelectorAll('.navbtn').forEach((btn) => {

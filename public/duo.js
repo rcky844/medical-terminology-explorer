@@ -469,5 +469,6 @@ $('#modeDuo').addEventListener('click', () => {
   $('#testView').hidden = true;
   $('#duoView').hidden = false;
   $('#spacedView').hidden = true;
+  resetTest();
   duoShowMenu();
 });

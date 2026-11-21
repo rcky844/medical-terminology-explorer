@@ -103,6 +103,16 @@ function startTestTimer(seconds=600) {
   }, 1000);
 }
 
+// Tear down an in-progress test when leaving or re-entering the test view.
+function resetTest() {
+  if (testTimerInterval) { clearInterval(testTimerInterval); testTimerInterval = null; }
+  state.test = null;
+  updateTimerDisplay(600);
+  const score = $('#score'); if (score) score.textContent = '';
+  const intro = $('#testIntro'); if (intro) intro.hidden = false;
+  const body = $('#testBody'); if (body) body.hidden = true;
+}
+
 function generateTest() {
   const terms = state.terms.filter(t => t.word && t.meaning_uk);
   const sec1 = pick(terms, 5).map(t => ({ type: 'defOfTerm', term: t, points: 2 }));
@@ -347,8 +357,7 @@ $('#modeTest').addEventListener('click', () => {
   $('#testView').hidden = false;
   $('#duoView').hidden = true;
   $('#spacedView').hidden = true;
-  const intro2 = $('#testIntro'); if (intro2) intro2.hidden = false;
-  const body2 = $('#testBody'); if (body2) body2.hidden = true;
+  resetTest();
 });
 $('#genTest').addEventListener('click', () => { if (!confirm('Generate a new test and start the 10-minute timer?')) return; generateTest(); });
 const startTestBtn = $('#startTest');

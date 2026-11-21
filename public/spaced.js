@@ -249,5 +249,6 @@ $('#modeSpaced').addEventListener('click', () => {
   $('#testView').hidden = true;
   $('#duoView').hidden = true;
   $('#spacedView').hidden = false;
+  resetTest();
   startSpaced();
 });
